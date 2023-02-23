@@ -1,0 +1,25 @@
+{
+	"menu": [
+		{
+			"id": "tools",
+			"submenu": [
+				{
+					"label": "Diagram judge",
+					"id": "tool.DiagramJudge",
+					"submenu": [
+						{
+							"label": "login",
+							"id": "tools.DiagramJudge.login",
+							"command": "DiagramJudge:login"
+						},
+						{
+							"label": "upload",
+							"id": "tools.DiagramJudge.upload",
+							"command": "DiagramJudge:upload"
+						}
+					]
+				}
+			]
+		}
+	]
+}
