@@ -8,8 +8,6 @@ module.exports = class DiagramJudge {
         this.uuid = this._uuid();
         this.commands = null;
 
-        if (!config.url) config.url = "http://localhost:3000/";
-
         this.setting = config;
 
         this.connection = this.initSql();
@@ -57,14 +55,17 @@ module.exports = class DiagramJudge {
         } = this.setting.spl;
     }
 
-
-
-    getLoginUrl = () => {
-       return path.join(this.setting.url, "/login", this.uuid);
+    getLoginPage = () => {
+        let url = new URL("./loginPage", this.setting.server.webServer.url);
+        url.search = new URLSearchParams({
+            uuid: this.uuid,
+            apiUrl: this.getLoginApi()
+        });
+        return url.href;
     }
 
-    getStatusUrl = () => {
-        return path.join(this.setting.url, "/status", this.uuid);
+    getLoginApi = () => {
+       return new URL("/api/login", this.setting.server.dataServer.url).href;
     }
 
     /**
@@ -73,7 +74,11 @@ module.exports = class DiagramJudge {
      */
     checkStatus = () => {
         return new Promise(async (res, rej) => {
-            const respond = await axios.get(this.getStatusUrl()).catch(err => {
+            let url = new URL(this.getLoginApi());
+            url.search = new URLSearchParams({
+                uuid: this.uuid
+            });
+            const respond = await axios.get(url.href).catch(err => {
                 rej(err);
             });
             res(respond.data);

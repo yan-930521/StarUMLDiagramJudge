@@ -18,7 +18,7 @@ const command = {
         // app.dialogs.showInfoDialog("login");
 
         const { superior: diagramJudge} = command;
-        let loginUrl = diagramJudge.getLoginUrl();
+        let loginUrl = diagramJudge.getLoginPage();
         console.log("loginUrl: ", loginUrl);
         shell.openExternal(loginUrl);
 

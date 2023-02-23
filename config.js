@@ -6,6 +6,14 @@ module.exports = {
         user: process.env.user,
         password: process.env.password,
     },
+    server: {
+        dataServer: {
+            url: "http://localhost:3000/"
+        },
+        webServer: {
+            url: "http://localhost:3030/"
+        }
+    },
     dev: true,
     url: null
 }

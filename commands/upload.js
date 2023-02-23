@@ -7,7 +7,7 @@ const command = {
          * 1. 
          */
 
-        const { superior: diagramJudge} = command;
+        const { superior: diagramJudge } = command;
         
         const project = app.repository.select("@Project");
 
