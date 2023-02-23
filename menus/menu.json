@@ -13,6 +13,21 @@
 							"command": "DiagramJudge:login"
 						},
 						{
+							"label": "test",
+							"id": "tools.DiagramJudge.test",
+							"command": "DiagramJudge:test"
+						},
+						{
+							"label": "test2",
+							"id": "tools.DiagramJudge.test2",
+							"command": "DiagramJudge:test2"
+						},
+						{
+							"label": "test3",
+							"id": "tools.DiagramJudge.test3",
+							"command": "DiagramJudge:test3"
+						},
+						{
 							"label": "upload",
 							"id": "tools.DiagramJudge.upload",
 							"command": "DiagramJudge:upload"
