@@ -1,6 +1,7 @@
 const command = {
     name: "upload",
     superior: null,
+    isDev: false,
     function: async () => {
         /**
          * step

@@ -6,6 +6,7 @@ const DIALOG_BTN_CANCEL = "cancel";
 const command = {
     name: "login",
     superior: null,
+    isDev: false,
     function: async () => {
         /**
          * step

@@ -3,11 +3,10 @@
 const command = {
     name: "test3",
     superior: null,
+    isDev: true,
     function: async () => {
 
         const { superior: diagramJudge } = command;
-
-        const api = diagramJudge.getLoginApi();
 
         let a = null, b = null;
 

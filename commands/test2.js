@@ -1,11 +1,10 @@
 const command = {
     name: "test2",
     superior: null,
+    isDev: true,
     function: async () => {
 
         const { superior: diagramJudge } = command;
-
-        const api = diagramJudge.getLoginApi();
 
         app.dialogs.showInputDialog("Enter question.").then(function ({ buttonId, returnValue }) {
             if (buttonId === 'ok') {

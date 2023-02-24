@@ -56,7 +56,7 @@ module.exports = class DiagramJudge {
     }
 
     getLoginPage = () => {
-        let url = new URL("./loginPage", this.setting.server.webServer.url);
+        let url = new URL("/page/login", this.setting.server.url);
         url.search = new URLSearchParams({
             uuid: this.uuid,
             apiUrl: this.getLoginApi()
@@ -65,7 +65,7 @@ module.exports = class DiagramJudge {
     }
 
     getLoginApi = () => {
-       return new URL("/api/login", this.setting.server.dataServer.url).href;
+       return new URL("/api/login", this.setting.server.url).href;
     }
 
     /**

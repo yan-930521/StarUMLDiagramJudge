@@ -7,12 +7,7 @@ module.exports = {
         password: process.env.password,
     },
     server: {
-        dataServer: {
-            url: "http://localhost:3000/"
-        },
-        webServer: {
-            url: "http://localhost:3030/"
-        }
+        url: "http://localhost:3000/"
     },
     dev: true,
     url: null

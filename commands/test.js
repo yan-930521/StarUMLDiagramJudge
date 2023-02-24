@@ -1,12 +1,10 @@
 const command = {
     name: "test",
     superior: null,
+    isDev: true,
     function: async () => {
         
         const { superior: diagramJudge} = command;
-
-        const api = diagramJudge.getLoginApi();
-        
 
         fetch("http://localhost:3000/api/add?a=字串1&b=字串2", {
             headers: {
