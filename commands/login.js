@@ -53,6 +53,7 @@ const command = {
                 console.log("status: ", status);
                 if(status.statusCode == diagramJudge.setting.Types.STATUS["ONLINE"]) {
                     if(checkInterval) clearInterval(checkInterval);
+                    // diagramJudge.renderPage();
                 }
             }
             callback();

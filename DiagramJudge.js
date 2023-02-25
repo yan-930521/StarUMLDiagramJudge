@@ -13,6 +13,7 @@ module.exports = class DiagramJudge {
         this.user = null;
         this.isLogin = false;
 
+        this.renderPage();
     }
 
     /**
@@ -74,6 +75,25 @@ module.exports = class DiagramJudge {
         }
     }
 
+    ping = () => {
+        let checkInterval = setInterval(async () => {
+            let status = await this.checkStatus().catch(err => {
+                if(err) {
+                    console.log(err)
+                    if(checkInterval) clearInterval(checkInterval);
+                    this.logout(true);
+                }
+            });
+            if(
+                status.statusCode != this.setting.Types.STATUS["ONLINE"] ||
+                status.uuid != this.uuid ||
+                status.account != this.user) {
+                if(checkInterval) clearInterval(checkInterval);
+                this.logout(true);
+            }
+        }, this.setting.checkLoginInterval * 1000)
+    }
+
     /**
      * 取得使用者登陸狀態
      * @returns online or offline
@@ -102,6 +122,7 @@ module.exports = class DiagramJudge {
      * 登出
      */
     logout = (local = false) => {
+        app.dialogs.showInfoDialog("已登出，請重新登錄");
         if (local) {
             this.isLogin = false;
             this.user = null;
@@ -125,6 +146,24 @@ module.exports = class DiagramJudge {
             }
             res(respond.data);
         });
+    }
+
+    renderPage = () => {
+        let content = document.querySelector(".content");
+        let questionPage = document.querySelector(".questionPage");
+        if(!questionPage) {
+            questionPage = document.createElement("div");
+            questionPage.className = "questionPage";
+            questionPage.style.zIndex = 100;
+            questionPage.style.right = 0;
+            questionPage.style.position = "relative";
+            questionPage.style.height = "80vh";
+            questionPage.style.width = "40vw";
+            questionPage.style.userSelect = "text";
+
+            content.appendChild(questionPage);
+        }
+
     }
 
     _uuid = () => {
