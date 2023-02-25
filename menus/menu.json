@@ -13,6 +13,11 @@
 							"command": "DiagramJudge:login"
 						},
 						{
+							"label": "logout",
+							"id": "tools.DiagramJudge.logout",
+							"command": "DiagramJudge:logout"
+						},
+						{
 							"label": "test",
 							"id": "tools.DiagramJudge.test",
 							"command": "DiagramJudge:test"

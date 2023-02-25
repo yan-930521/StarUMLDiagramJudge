@@ -14,7 +14,7 @@ const api = {
 
             res.send({
                 account: statusCache[uuid] ? statusCache[uuid].account : null,
-                statusCode: api.superior.Types.STATUS[statusCache[uuid] ? "OFFLINE" : "USERNOTFOUND"],
+                statusCode: statusCache[uuid] ? statusCache[uuid].statusCode : api.superior.Types.STATUS["USERNOTFOUND"],
             });
         },
         post: (req, res) => {

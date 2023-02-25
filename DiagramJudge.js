@@ -87,11 +87,11 @@ module.exports = class DiagramJudge {
             const respond = await axios.get(url.href).catch(err => {
                 rej(err);
             });
-            if (respond.data.statusCode == diagramJudge.setting.types.STATUS["ONLINE"] && this.user == respond.data.account) {
+            if (respond.data.statusCode == this.setting.Types.STATUS["ONLINE"]) {
                 this.isLogin = true;
                 this.user = respond.data.account;
             } else {
-                this.logout(true)
+                this.logout(true);
                 rej(new Error("登陸失敗"));
             }
             res(respond.data);
@@ -117,7 +117,7 @@ module.exports = class DiagramJudge {
             const respond = await axios.delete(url.href).catch(err => {
                 rej(err);
             });
-            if (respond.data.statusCode != this.setting.types.STATUS["ONLINE"]) {
+            if (respond.data.statusCode != this.setting.Types.STATUS["ONLINE"]) {
                 this.isLogin = false;
                 this.user = null;
 

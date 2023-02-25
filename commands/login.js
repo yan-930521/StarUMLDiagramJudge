@@ -40,19 +40,23 @@ const command = {
 
         let buttonId = await showCostomDialogs("please login to Diagram Judge.");
         if(buttonId == "登陸完畢") {
-            let checkInterval = setInterval(async () => {
+            let checkInterval = null;
+            const callback = async () => {
                 let status = await diagramJudge.checkStatus().catch(err => {
                     if(err) {
                         // 登陸失敗
+                        console.log(err)
                         app.dialogs.showInfoDialog("登陸失敗，請於稍後重新登錄");
-                        checkInterval(checkInterval);
+                        if(checkInterval) clearInterval(checkInterval);
                     }
                 });
                 console.log("status: ", status);
-                if(status.statusCode == diagramJudge.setting.types.STATUS["ONLINE"]) {
-                    checkInterval(checkInterval);
+                if(status.statusCode == diagramJudge.setting.Types.STATUS["ONLINE"]) {
+                    if(checkInterval) clearInterval(checkInterval);
                 }
-            }, diagramJudge.setting.checkLoginInterval * 1000);
+            }
+            callback();
+            checkInterval = setInterval(callback, diagramJudge.setting.checkLoginInterval * 1000);
         }
     }
 }

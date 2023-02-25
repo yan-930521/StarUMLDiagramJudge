@@ -7,14 +7,15 @@ module.exports = {
         password: process.env.password,
     },
     server: {
-        url: "http://120.108.204.99:3000/"
+        url: "http://localhost:3000/" //120.108.204.99
     },
     dev: true,
     url: null,
-    types: {
+    Types: {
         STATUS: {
             "ONLINE": 1,
-            "OFFLINE": 2
+            "OFFLINE": 2,
+            "USERNOTFOUND": 3
         }
     },
     checkLoginInterval: 15
