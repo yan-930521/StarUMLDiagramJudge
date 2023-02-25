@@ -1,20 +1,21 @@
-const express = require("express");
-const path = require("path");
-const Types = require("../../utils/Types");
-const checkLogin = require("../../utils/checkLogin");
-
-const router = express.Router();
+const { packageRouter } = require("../../Server.js");
 
 const statusCache = {}
 
 const api = {
     path: "/login",
+    superior: null,
+    isDev: false,
     methods: {
         get: (req, res) => {
             const {
                 uuid
             } = req.query;
-            res.send({ code: statusCache[uuid]});
+
+            res.send({
+                account: statusCache[uuid] ? statusCache[uuid].account : null,
+                statusCode: api.superior.Types.STATUS[statusCache[uuid] ? "OFFLINE" : "USERNOTFOUND"],
+            });
         },
         post: (req, res) => {
             const {
@@ -22,18 +23,31 @@ const api = {
                 account,
                 password
             } = req.body;
-            
-            let success = checkLogin(account, password);
 
-            statusCache[uuid] = Types.STATUS[success? "ONLINE": "OFFLINE"];
+            let success = api.superior.checkLogin(account, password);
 
-            res.send({ code: statusCache[uuid]});
+            statusCache[uuid] = {
+                account: account,
+                statusCode: api.superior.Types.STATUS[success ? "ONLINE" : "OFFLINE"],
+            }
+
+            res.send(statusCache[uuid]);
+        },
+        delete: (req, res) => {
+            const {
+                uuid
+            } = req.query;
+
+            if (statusCache[uuid]) {
+                statusCache[uuid].statusCode = api.superior.Types.STATUS["OFFLINE"];
+            }
+
+            res.send({
+                account: statusCache[uuid] ? statusCache[uuid].account : null,
+                statusCode: api.superior.Types.STATUS[statusCache[uuid] ? "OFFLINE" : "USERNOTFOUND"],
+            });
         }
     }
 }
 
-for(let m in api.methods)
-    router[m](api.path, api.methods[m]);
-
-module.exports = router;
-
+module.exports = api;

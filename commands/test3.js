@@ -1,5 +1,3 @@
-
-
 const command = {
     name: "test3",
     superior: null,

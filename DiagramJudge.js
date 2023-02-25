@@ -10,7 +10,9 @@ module.exports = class DiagramJudge {
 
         this.setting = config;
 
-        this.connection = this.initSql();
+        this.user = null;
+        this.isLogin = false;
+
     }
 
     /**
@@ -47,25 +49,29 @@ module.exports = class DiagramJudge {
         return events;
     }
 
-    initSql = () => {
-        const {
-            user,
-            password,
-            database,
-        } = this.setting.spl;
+    getPage = (page) => {
+        switch (page) {
+            case "login":
+                let url = new URL("/page/" + page, this.setting.server.url);
+                url.search = new URLSearchParams({
+                    uuid: this.uuid,
+                    apiUrl: this.getApi("login")
+                });
+                return url.href;
+            default:
+                return new URL("/page", this.setting.server.url).href;
+        }
     }
 
-    getLoginPage = () => {
-        let url = new URL("/page/login", this.setting.server.url);
-        url.search = new URLSearchParams({
-            uuid: this.uuid,
-            apiUrl: this.getLoginApi()
-        });
-        return url.href;
-    }
-
-    getLoginApi = () => {
-       return new URL("/api/login", this.setting.server.url).href;
+    getApi = (router) => {
+        switch (router) {
+            case "login":
+                return new URL("/api/login", this.setting.server.url).href;
+            case "judge":
+                return new URL("/api/judge", this.setting.server.url).href;
+            default:
+                return new URL("/api", this.setting.server.url).href;
+        }
     }
 
     /**
@@ -74,13 +80,49 @@ module.exports = class DiagramJudge {
      */
     checkStatus = () => {
         return new Promise(async (res, rej) => {
-            let url = new URL(this.getLoginApi());
+            let url = new URL(this.getApi("login"));
             url.search = new URLSearchParams({
                 uuid: this.uuid
             });
             const respond = await axios.get(url.href).catch(err => {
                 rej(err);
             });
+            if (respond.data.statusCode == diagramJudge.setting.types.STATUS["ONLINE"] && this.user == respond.data.account) {
+                this.isLogin = true;
+                this.user = respond.data.account;
+            } else {
+                this.logout(true)
+                rej(new Error("登陸失敗"));
+            }
+            res(respond.data);
+        });
+    }
+
+    /**
+     * 登出
+     */
+    logout = (local = false) => {
+        if (local) {
+            this.isLogin = false;
+            this.user = null;
+
+            this.uuid = this._uuid();
+            return;
+        }
+        return new Promise(async (res, rej) => {
+            let url = new URL(this.getApi("login"));
+            url.search = new URLSearchParams({
+                uuid: this.uuid
+            });
+            const respond = await axios.delete(url.href).catch(err => {
+                rej(err);
+            });
+            if (respond.data.statusCode != this.setting.types.STATUS["ONLINE"]) {
+                this.isLogin = false;
+                this.user = null;
+
+                this.uuid = this._uuid();
+            }
             res(respond.data);
         });
     }
