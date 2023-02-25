@@ -1,4 +1,4 @@
-require('dotenv').config();
+dotenv.config({path: "./.env"}
 
 module.exports = {
     spl: {
