@@ -36,6 +36,16 @@
 							"label": "upload",
 							"id": "tools.DiagramJudge.upload",
 							"command": "DiagramJudge:upload"
+						},
+						{
+							"label": "judge",
+							"id": "tools.DiagramJudge.judge",
+							"command": "DiagramJudge:judge"
+						},
+						{
+							"label": "make_question",
+							"id": "tools.DiagramJudge.make_question",
+							"command": "DiagramJudge:make_question"
 						}
 					]
 				}
