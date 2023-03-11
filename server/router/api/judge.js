@@ -5,16 +5,17 @@ const api = {
     methods: {
         get: (req, res) => {
             const {
-                baseModel
+                st_id,
+                baseModel,
+                p_num
             } = req.query;
-            res.send({ answer: baseModel});
+            res.send({ answer: api.superior.djs._startJudging(st_id, baseModel, p_num)});
         },
         post: (req, res) => {
             const {
                 baseModel
             } = req.body;
-            abstractedResult = _abstractFromStudentAnswer(baseModel);
-            res.send({ answer: abstractedResult});
+            res.send({ answer: baseModel});
         }
     }
 }

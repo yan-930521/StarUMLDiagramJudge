@@ -1,11 +1,4 @@
-require("dotenv").config({path: "./env/.env"});
-
 module.exports = {
-    spl: {
-        database: process.env.database,
-        user: process.env.user,
-        password: process.env.password,
-    },
     server: {
         url: "http://localhost:3000/" //120.108.204.99
     },
@@ -18,5 +11,21 @@ module.exports = {
             "USERNOTFOUND": 3
         }
     },
-    checkLoginInterval: 15
+    checkLoginInterval: 15,
+    css: {
+        questionPage: {
+            style: {
+                backgroundColor: "gray",
+                zIndex: 2,
+                right: 0,
+                position: "absolute",
+                height: "100%",
+                width: "50%",
+                userSelect: "text",
+                right: 0,
+                top: 0
+            }
+        }
+    }
+    
 }

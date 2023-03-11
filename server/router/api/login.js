@@ -17,14 +17,14 @@ const api = {
                 statusCode: statusCache[uuid] ? statusCache[uuid].statusCode : api.superior.Types.STATUS["USERNOTFOUND"],
             });
         },
-        post: (req, res) => {
+        post: async (req, res) => {
             const {
                 uuid,
                 account,
                 password
             } = req.body;
 
-            let success = api.superior.checkLogin(account, password);
+            let success = await api.superior.checkLogin(account, password);
 
             statusCache[uuid] = {
                 account: account,

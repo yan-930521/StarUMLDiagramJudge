@@ -1,7 +1,10 @@
 const Server = require("./Server");
+const config = require("./config");
 
-const server = new Server({
-    port: 3000
-});
+const server = new Server(config);
 
 server.init();
+
+/** 
+ * 加入api版本
+ */

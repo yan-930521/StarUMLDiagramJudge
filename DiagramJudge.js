@@ -1,6 +1,5 @@
 const fs = require("fs");
 const path = require("path");
-const axios = require("axios");
 
 module.exports = class DiagramJudge {
     constructor(config = {}) {
@@ -13,7 +12,10 @@ module.exports = class DiagramJudge {
         this.user = null;
         this.isLogin = false;
 
-        this.renderPage();
+        this.fetchData("questions").then((questions) => {
+            this.renderPage(questions.data);
+        });
+        
     }
 
     /**
@@ -70,6 +72,8 @@ module.exports = class DiagramJudge {
                 return new URL("/api/login", this.setting.server.url).href;
             case "judge":
                 return new URL("/api/judge", this.setting.server.url).href;
+            case "data":
+                return new URL("/api/data", this.setting.server.url).href;
             default:
                 return new URL("/api", this.setting.server.url).href;
         }
@@ -104,17 +108,27 @@ module.exports = class DiagramJudge {
             url.search = new URLSearchParams({
                 uuid: this.uuid
             });
-            const respond = await axios.get(url.href).catch(err => {
+            const respond = await fetch(url.href, {
+                headers: {
+                    'user-agent': 'Mozilla/4.0 MDN Example',
+                    'content-type': 'application/json',
+                    "Access-Control-Allow-Origin": "*"
+                },
+                method: 'get'
+            }).then((res) => {
+                return res.json();
+            }).catch(err => {
                 rej(err);
             });
-            if (respond.data.statusCode == this.setting.Types.STATUS["ONLINE"]) {
+
+            if (respond.statusCode == this.setting.Types.STATUS["ONLINE"]) {
                 this.isLogin = true;
-                this.user = respond.data.account;
+                this.user = respond.account;
             } else {
                 this.logout(true);
                 rej(new Error("登陸失敗"));
             }
-            res(respond.data);
+            res(respond);
         });
     }
 
@@ -135,35 +149,108 @@ module.exports = class DiagramJudge {
             url.search = new URLSearchParams({
                 uuid: this.uuid
             });
-            const respond = await axios.delete(url.href).catch(err => {
+            
+            const respond = await fetch(url.href, {
+                headers: {
+                    'user-agent': 'Mozilla/4.0 MDN Example',
+                    'content-type': 'application/json',
+                    "Access-Control-Allow-Origin": "*"
+                },
+                method: 'delete'
+            }).then((res) => {
+                return res.json();
+            }).catch(err => {
                 rej(err);
             });
-            if (respond.data.statusCode != this.setting.Types.STATUS["ONLINE"]) {
+            if (respond.statusCode != this.setting.Types.STATUS["ONLINE"]) {
                 this.isLogin = false;
                 this.user = null;
 
                 this.uuid = this._uuid();
             }
-            res(respond.data);
+            res(respond);
         });
     }
 
-    renderPage = () => {
+    fetchData = (type) => {
+        switch(type) {
+            case "questions":
+                return new Promise(async (res, rej) => {
+                    let url = new URL(this.getApi("data"));
+                    url.search = new URLSearchParams({
+                        dataName: "questions"
+                    });
+                    
+                    const respond = await fetch(url.href, {
+                        headers: {
+                            'user-agent': 'Mozilla/4.0 MDN Example',
+                            'content-type': 'application/json',
+                            "Access-Control-Allow-Origin": "*"
+                        },
+                        method: 'get'
+                    }).then((res) => {
+                        return res.json();
+                    }).catch(err => {
+                        rej(err);
+                    });
+
+                    res(respond);
+                });
+            default:
+                throw new Error("type not define.");
+        }
+    }
+
+    /**
+     * 渲染看題目的頁面
+     */
+    renderPage = (questions = []) => {
+        console.log(questions);
+
+        this.nowQuestion = {
+            question: questions[0],
+            index: 0
+        }
+        
         let content = document.querySelector(".content");
         let questionPage = document.querySelector(".questionPage");
-        if(!questionPage) {
-            questionPage = document.createElement("div");
-            questionPage.className = "questionPage";
-            questionPage.style.zIndex = 100;
-            questionPage.style.right = 0;
-            questionPage.style.position = "relative";
-            questionPage.style.height = "80vh";
-            questionPage.style.width = "40vw";
-            questionPage.style.userSelect = "text";
+        let htmlQuestions = `
+            <div id="questions" style="width: 30%; height: 100%; display: inline-block;">
+                $QUESTIONS
+            </div>
+            <div id="real-question" style="position:relative; right:0px; top: 0px; width: 70%; height: 100%; display: inline-block; float: right;">
+            </div>`;
+        let htmlQuestion = `
+            <div class="question" style="user-select:none; width: 100%; background-color: white;font-size: xx-large" onmouseover="this.style.backgroundColor='#ffcc00';this.style.boxShadow='0 0 20px #ffcc00';" onmouseout="this.style.backgroundColor='white';this.style.boxShadow='none';" onclick="window.focusQuestion($QINDEX)">
+                $NO. $QUESTION
+            </div>`;
 
-            content.appendChild(questionPage);
+        window.focusQuestion = (index) => {
+            let realQuestion = document.querySelector("#real-question");
+            if(!realQuestion) return;
+            this.nowQuestion.index = index;
+            this.nowQuestion.question = questions[index];
+            realQuestion.innerHTML = this.nowQuestion.question.question_describtion;
         }
 
+        document.querySelector("#toolbar").style.zIndex = 3;
+
+        if(!questionPage) {
+            let htmlqs = "";
+            for(let i in questions) {
+                htmlqs += htmlQuestion.replace("$NO", Number(i)+1).replace("$QUESTION", questions[i].question_title).replace("$QINDEX", i)
+            }
+            let questionPageWrapper = document.createElement("div");
+            questionPageWrapper.className = "questionPageWrapper";
+            let questionPageString = fs.readFileSync(path.join(__dirname, "./insert.html"), "utf-8");
+            questionPageWrapper.innerHTML = questionPageString.replace(
+                "$QUESTIONPAGE",
+                htmlQuestions.replace("$QUESTIONS", htmlqs)
+            );
+            content.appendChild(questionPageWrapper);
+        } else {
+
+        }
     }
 
     _uuid = () => {

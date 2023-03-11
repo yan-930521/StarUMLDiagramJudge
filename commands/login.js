@@ -53,7 +53,10 @@ const command = {
                 console.log("status: ", status);
                 if(status.statusCode == diagramJudge.setting.Types.STATUS["ONLINE"]) {
                     if(checkInterval) clearInterval(checkInterval);
-                    // diagramJudge.renderPage();
+                    // 登陸成功，渲染頁面
+                    let questions = await diagramJudge.fetchData("questions");
+                    console.log(questions)
+                    diagramJudge.renderPage(questions.data);
                 }
             }
             callback();

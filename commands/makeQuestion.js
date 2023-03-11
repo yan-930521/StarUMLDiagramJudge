@@ -5,6 +5,7 @@ const command = {
         
         const { superior: diagramJudge} = command;
 
+        const api = diagramJudge.getLoginApi();
         let base = null;
 		let b = null;
 
@@ -28,13 +29,13 @@ const command = {
 				
                 //console.log(c)
 				c = JSON.stringify(c)
-                    fetch("http://120.108.204.99:3000/api/make_question?" + `baseModel=${(c)}&p_num=${(b)}`, {
+                    fetch("http://localhost:3000/api/make_question?" + `baseModel=${(c)}`, {
                         headers: {
                             'user-agent': 'Mozilla/4.0 MDN Example',
                             'content-type': 'application/json',
                             "Access-Control-Allow-Origin": "*"
                         },
-                        method: "post"
+                        method: "get"
                     }).then((res) => {
                         return res.json();
                     }).then((data) => {
@@ -88,6 +89,8 @@ function _make_CD_Question(base)
 			if(c[i][j].indexOf("Attribute") >= 0){tmpQuestionTextInClass += '{"Attribute":"' + c[i][j] + '"},';}
 			else if(c[i][j].indexOf("Generalization") >= 0){tmpQuestionTextInClass += '{"Generalization":"' + c[i][j] + '"},';}
 			else if(c[i][j].indexOf("Class") >= 0){tmpQuestionTextInClass += '{"Class":"' + c[i][j] + '"},';}
+			else if(c[i][j].indexOf("Interface") >= 0){tmpQuestionTextInClass += '{"Interface":"' + c[i][j] + '"},';}
+			else if(c[i][j].indexOf("InterfaceRealization") >= 0){tmpQuestionTextInClass += '{"InterfaceRealization":"' + c[i][j] + '"},';}
 			else if(c[i][j].indexOf("Operation") >= 0){tmpQuestionTextInClass += '{"Operation":"' + c[i][j] + '"},';}
 			//tmpQuestionTextInClass += '{"name":"' + c[i][j] + '"},';
 		}

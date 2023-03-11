@@ -3,6 +3,8 @@ const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
 
+const mysql = require('mysql');
+
 const test_data = {
     "acc1": "pwd1",
     "acc2": "pwd2"
@@ -11,9 +13,16 @@ const test_data = {
 module.exports = class Server {
     constructor(config) {
         this.Types = require("./utils/Types");
+        this.DiagramJudgeStrategy = require("./utils/diagramJudgeStrategy");
 
-        for(let c in config)
+        this.connection = {
+            database1: null,
+            database2: null
+        };
+
+        for (let c in config)
             this[c] = config[c];
+
     }
 
     /**
@@ -36,6 +45,62 @@ module.exports = class Server {
         this.app.listen(this.port, () => {
             console.log(`sever listen on port:${this.port}`);
         });
+
+        this.connection.database1 = this.handelSqlConnection(this.sql1);
+        this.connection.database2 = this.handelSqlConnection(this.sql2);
+
+        this.djs = new this.DiagramJudgeStrategy(this.connection.database2);
+    }
+
+    handelSqlConnection = (db_config) => {
+        let connect = mysql.createConnection(db_config);
+
+        const reconnect = (connection) => {
+            if (connection) connection.destroy();
+            connection = mysql.createConnection(db_config);
+            connection.connect((err) => {
+                if (err) {
+                    setTimeout(reconnect, 2000);
+                } else {
+                    return connection;
+                }
+            });
+        }
+
+        connect.on('error', function (err) {
+            if (err.code === "PROTOCOL_CONNECTION_LOST") {
+                console.log("/!\\ Cannot establish a connection with the database. /!\\ (" + err.code + ")");
+                connect = reconnect(connect);
+            }
+
+            else if (err.code === "PROTOCOL_ENQUEUE_AFTER_QUIT") {
+                console.log("/!\\ Cannot establish a connection with the database. /!\\ (" + err.code + ")");
+                connect = reconnect(connect);
+            }
+
+            else if (err.code === "PROTOCOL_ENQUEUE_AFTER_FATAL_ERROR") {
+                console.log("/!\\ Cannot establish a connection with the database. /!\\ (" + err.code + ")");
+                connect = reconnect(connect);
+            }
+
+            else if (err.code === "PROTOCOL_ENQUEUE_HANDSHAKE_TWICE") {
+                console.log("/!\\ Cannot establish a connection with the database. /!\\ (" + err.code + ")");
+            }
+
+            else {
+                console.log("/!\\ Cannot establish a connection with the database. /!\\ (" + err.code + ")");
+                connect = reconnect(connect);
+            }
+
+        });
+
+        connect.connect((err) => {
+            if (err) {
+                connect = reconnect(connect);
+            }
+        });
+
+        return connect;
     }
 
     /**
@@ -43,11 +108,11 @@ module.exports = class Server {
      */
     static packageRouter = (api) => {
         const router = express.Router();
-        
-        for(let m in api.methods)
+
+        for (let m in api.methods)
             router[m](api.path, api.methods[m]);
 
-            return router;
+        return router;
     }
 
     /**
@@ -56,7 +121,7 @@ module.exports = class Server {
     loadRouters = () => {
         const routersDir = path.join(__dirname, "./router");
         const routerFolders = fs.readdirSync(routersDir);
-        
+
         for (const folder of routerFolders) {
             const folderPath = path.join(routersDir, folder);
             const routerFolder = fs.readdirSync(folderPath);
@@ -69,15 +134,65 @@ module.exports = class Server {
     }
 
     /**
+     * 訪問OOP database
+     * @param {} cmd SQL指令
+     * @returns 
+     */
+    query1 = (cmd) => {
+        return new Promise((res, rej) => {
+            this.connection.database1.query(cmd, (err, result) => {
+                if (err) {
+                    console.log('[ERROR] - ', err.message);
+                    rej();
+                }
+                else res(result);
+            });
+        })
+    }
+
+    /**
+     * 訪問UML database
+     * @param {} cmd SQL指令
+     * @returns 
+     */
+    query2 = (cmd) => {
+        return new Promise((res, rej) => {
+            this.connection.database2.query(cmd, (err, result) => {
+                if (err) {
+                    console.log('[ERROR] - ', err.message);
+                    rej();
+                }
+                else res(result);
+            });
+        })
+    }
+
+    /**
      * 檢查用戶的登錄狀態
      */
-    checkLogin = (acc, pwd) => {    
+    checkLogin = async (acc, pwd) => {
         let status = false;
-    
-        if (test_data[acc] && pwd == test_data[acc]) {
+
+        let results = await this.query1(`SELECT * FROM users WHERE login_id = '${acc}' AND password = '${pwd}'`).catch(err => {
+            console.log(err)
+        });
+
+        if (results.length > 0) {
             status = true;
         }
-    
+
         return status;
+    }
+
+    /**
+     * 取得題目
+     */
+    fetchData = (type) => {
+        switch (type) {
+            case "questions":
+                return this.query2("SELECT * FROM uml_judge_questions");
+            default:
+                throw new Error("type not define.");
+        }
     }
 }
