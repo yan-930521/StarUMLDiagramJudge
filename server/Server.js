@@ -46,61 +46,64 @@ module.exports = class Server {
             console.log(`sever listen on port:${this.port}`);
         });
 
-        this.connection.database1 = this.handelSqlConnection(this.sql1);
-        this.connection.database2 = this.handelSqlConnection(this.sql2);
-
-        this.djs = new this.DiagramJudgeStrategy(this.connection.database2);
+        this.djs = new this.DiagramJudgeStrategy(this.sql2, this.getSqlConnection);
     }
 
-    handelSqlConnection = (db_config) => {
-        let connect = mysql.createConnection(db_config);
+    getSqlConnection = (db_config) => {
+        return new Promise(async (res, rej) => {
+            let connect = mysql.createConnection(db_config);
+            const reconnect = (connection) => {
+                return new Promise((_res, _rej) => {
+                    if (connection) connection.destroy();
+                    connection = mysql.createConnection(db_config);
+                    connection.connect((err) => {
+                        if (err) {
+                            setTimeout(reconnect, 2000);
+                        }
+                    });
+                    _res(connection);
+                })
+            }
 
-        const reconnect = (connection) => {
-            if (connection) connection.destroy();
-            connection = mysql.createConnection(db_config);
-            connection.connect((err) => {
+            connect.on('error', async (err) => {
+                if (err.code === "PROTOCOL_CONNECTION_LOST") {
+                    console.log("/!\\ Cannot establish a connection with the database. /!\\ (" + err.code + ")");
+                    connect = await reconnect(connect);
+                    res(connect);
+                }
+
+                else if (err.code === "PROTOCOL_ENQUEUE_AFTER_QUIT") {
+                    console.log("/!\\ Cannot establish a connection with the database. /!\\ (" + err.code + ")");
+                    connect = await reconnect(connect);
+                    res(connect);
+                }
+
+                else if (err.code === "PROTOCOL_ENQUEUE_AFTER_FATAL_ERROR") {
+                    console.log("/!\\ Cannot establish a connection with the database. /!\\ (" + err.code + ")");
+                    connect = await reconnect(connect);
+                    res(connect);
+                }
+
+                else if (err.code === "PROTOCOL_ENQUEUE_HANDSHAKE_TWICE") {
+                    console.log("/!\\ Cannot establish a connection with the database. /!\\ (" + err.code + ")");
+                }
+
+                else {
+                    console.log("/!\\ Cannot establish a connection with the database. /!\\ (" + err.code + ")");
+                    connect = await reconnect(connect);
+                    res(connect);
+                }
+
+            });
+
+            connect.connect(async (err) => {
                 if (err) {
-                    setTimeout(reconnect, 2000);
-                } else {
-                    return connection;
+                    connect = await reconnect(connect);
+                    res(connect);
                 }
             });
-        }
-
-        connect.on('error', function (err) {
-            if (err.code === "PROTOCOL_CONNECTION_LOST") {
-                console.log("/!\\ Cannot establish a connection with the database. /!\\ (" + err.code + ")");
-                connect = reconnect(connect);
-            }
-
-            else if (err.code === "PROTOCOL_ENQUEUE_AFTER_QUIT") {
-                console.log("/!\\ Cannot establish a connection with the database. /!\\ (" + err.code + ")");
-                connect = reconnect(connect);
-            }
-
-            else if (err.code === "PROTOCOL_ENQUEUE_AFTER_FATAL_ERROR") {
-                console.log("/!\\ Cannot establish a connection with the database. /!\\ (" + err.code + ")");
-                connect = reconnect(connect);
-            }
-
-            else if (err.code === "PROTOCOL_ENQUEUE_HANDSHAKE_TWICE") {
-                console.log("/!\\ Cannot establish a connection with the database. /!\\ (" + err.code + ")");
-            }
-
-            else {
-                console.log("/!\\ Cannot establish a connection with the database. /!\\ (" + err.code + ")");
-                connect = reconnect(connect);
-            }
-
+            res(connect);
         });
-
-        connect.connect((err) => {
-            if (err) {
-                connect = reconnect(connect);
-            }
-        });
-
-        return connect;
     }
 
     /**
@@ -139,8 +142,9 @@ module.exports = class Server {
      * @returns 
      */
     query1 = (cmd) => {
-        return new Promise((res, rej) => {
-            this.connection.database1.query(cmd, (err, result) => {
+        return new Promise(async (res, rej) => {
+            let connection = await this.getSqlConnection(this.sql1);
+            connection.query(cmd, (err, result) => {
                 if (err) {
                     console.log('[ERROR] - ', err.message);
                     rej();
@@ -156,8 +160,9 @@ module.exports = class Server {
      * @returns 
      */
     query2 = (cmd) => {
-        return new Promise((res, rej) => {
-            this.connection.database2.query(cmd, (err, result) => {
+        return new Promise(async (res, rej) => {
+            let connection = await this.getSqlConnection(this.sql2);
+            connection.query(cmd, (err, result) => {
                 if (err) {
                     console.log('[ERROR] - ', err.message);
                     rej();

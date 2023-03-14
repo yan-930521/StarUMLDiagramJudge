@@ -8,7 +8,7 @@ const command = {
         let base = null;
 		let b = null;
 
-        app.elementPickerDialog.showDialog('Select a base model to be judged', null, type.UMLModelElement).then(function ({buttonId, returnValue})
+        app.elementPickerDialog.showDialog('Select a base model to be judged', null, type.ExtensibleModel).then(function ({buttonId, returnValue})
 		{
 			if (buttonId === 'ok') 
 			{
@@ -37,6 +37,11 @@ const command = {
 					{
 						c = _abstract_SD_FromStudentAnswer(base)
 						p = 4
+					}
+				if(base.ownedElements[0] instanceof type.ERDDiagram)
+					{
+						c = _abstract_ERD_FromStudentAnswer(base)
+						p = 5
 					}
 				
                 console.log(c)
@@ -86,20 +91,10 @@ function _abstract_CD_FromStudentAnswer(baseModel)
 	for (i = 1; i < Class_count; i++)
 	{
 		data1 = baseModel.ownedElements[i]//abstract a class from base model
-		if(data1 instanceof type.UMLClass)
-		{
-			tmpClassAnswer.push(data1.name)
-			tmpAnswer = "Class name:  " + data1.name
-			tmpClassAnswer.push(tmpAnswer)
-			tmpAnswer = ""
-		}
-		else if(data1 instanceof type.UMLInterface)
-		{
-			tmpClassAnswer.push(data1.name)
-			tmpAnswer = "Interface name:  " + data1.name
-			tmpClassAnswer.push(tmpAnswer)
-			tmpAnswer = ""
-		}
+		tmpClassAnswer.push(data1.name)
+		tmpAnswer = "Class name:  " + data1.name
+		tmpClassAnswer.push(tmpAnswer)
+		tmpAnswer = ""
 		
 		//abstract elements from class
 		if (data1.hasOwnProperty('ownedElements'))
@@ -115,20 +110,6 @@ function _abstract_CD_FromStudentAnswer(baseModel)
 						if (data2[j].target._id == searchedClassID)
 						{
 							tmpAnswer =  "Generalization:  " + data1.name + " extends " + baseModel.ownedElements[k].name
-							//console.log(tmpAnswer)
-							tmpClassAnswer.push(tmpAnswer)
-							tmpAnswer = ""
-						}
-					}
-				}
-				else if (data2[j] instanceof type.UMLInterfaceRealization)
-				{
-					for (k = 1;k < Class_count; k++)
-					{
-						var searchedClassID = baseModel.ownedElements[k]._id
-						if (data2[j].target._id == searchedClassID)
-						{
-							tmpAnswer =  "InterfaceRealization:  " + data1.name + " implements " + baseModel.ownedElements[k].name
 							//console.log(tmpAnswer)
 							tmpClassAnswer.push(tmpAnswer)
 							tmpAnswer = ""
@@ -244,16 +225,16 @@ function _abstract_UCD_FromStudentAnswer(baseModel)
 	{
 		data1 = baseModel.ownedElements[i]//abstract a class from base model
 		//tmpClassAnswer.push(data1.type)
+
+		tmpClassAnswer.push(data1.name)
 		if(data1 instanceof type.UMLUseCaseSubject)
 		{
-			tmpClassAnswer.push(data1.name)
-			tmpAnswer = "UseCaseSubject:  " + data1.name
+			tmpAnswer = "UseCaseSubject  " + data1.name
 			tmpClassAnswer.push(tmpAnswer)
 			tmpAnswer = ""
 		}
 		if(data1 instanceof type.UMLActor)
 		{
-			tmpClassAnswer.push(data1.name)
 			tmpAnswer = "Actor name:  " + data1.name
 			tmpClassAnswer.push(tmpAnswer)
 			tmpAnswer = ""
@@ -286,7 +267,6 @@ function _abstract_UCD_FromStudentAnswer(baseModel)
 		}
 		if(data1 instanceof type.UMLUseCase)
 		{
-			tmpClassAnswer.push(data1.name)
 			tmpAnswer = "UseCase name:  " + data1.name
 			tmpClassAnswer.push(tmpAnswer)
 			tmpAnswer = ""
@@ -366,9 +346,18 @@ function _abstract_OD_FromStudentAnswer(baseModel)
 			data3 = data1.slots
 			for (j = 0; j < Object.keys(data3).length; j++)
 			{
-				tmpAnswer = "Slot:  " + data3[j].name + ": " + data3[j].type + " = " + data3[j].value
-				tmpClassAnswer.push(tmpAnswer)
-				tmpAnswer = ""
+				if(data3[j].value != "")
+				{
+					tmpAnswer = "Slot:  " + data3[j].name + ": " + data3[j].type + " = " + data3[j].value
+					tmpClassAnswer.push(tmpAnswer)
+					tmpAnswer = ""
+				}
+				else
+				{
+					tmpAnswer = "Slot:  " + data3[j].name + ": = " + data3[j].type
+					tmpClassAnswer.push(tmpAnswer)
+					tmpAnswer = ""
+				}
 			}
 		}
 		
@@ -406,9 +395,74 @@ function _abstract_SD_FromStudentAnswer(baseModel)
 		tmpAnswer = ""
 	}
 		
+		
 	//copy tmpClassAnswer to studentAnswer
 	studentAnswer.push(tmpClassAnswer)
 	tmpClassAnswer = []
+	//console.log(studentAnswer)
+	return studentAnswer;
+}
+
+function _abstract_ERD_FromStudentAnswer(baseModel)
+{
+	var studentAnswer = []
+	var tmpAnswer = ""
+	var tmpClassAnswer = []
+	var data1 = [], data2 = [], data3 = [],data4 = []
+
+	var Entity_count = Object.keys(baseModel.ownedElements).length
+	
+	//abstract the charactoristic from the base model
+	for (i = 1; i < Entity_count; i++)
+	{
+		data1 = baseModel.ownedElements[i]//abstract a class from base model
+		//tmpClassAnswer.push(data1.type)
+
+		tmpClassAnswer.push(data1.name)
+		
+		if(data1 instanceof type.ERDEntity)
+		{
+			tmpAnswer = "Entity name:  " + data1.name
+			tmpClassAnswer.push(tmpAnswer)
+			tmpAnswer = ""
+			if(data1.hasOwnProperty('columns'))
+			{
+				data2 = data1.columns
+				//console.log(data2.type)
+				for(let j = 0;j < Object.keys(data2).length;j++)
+				{
+					if(data2[j] instanceof type.ERDColumn)
+					{
+						tmpAnswer = "Column: "
+						if(data2[j].foreignKey == true) tmpAnswer += "FK,"
+						if(data2[j].primaryKey == true) tmpAnswer += "PK,"
+						if(data2[j].nullable == true) tmpAnswer += "N,"
+						if(data2[j].unique == true) tmpAnswer += "U,"
+						tmpAnswer += " | " + data2[j].name + " | " + data2[j].type + "(" + data2[j].length + ")"
+						tmpClassAnswer.push(tmpAnswer)
+						tmpAnswer = ""
+					}
+				}
+			}
+			if(data1.hasOwnProperty('ownedElements'))
+			{
+				data3 = data1.ownedElements
+				for(let j = 0;j < Object.keys(data3).length;j++)
+				{
+					if(data3[j] instanceof type.ERDRelationship)
+					{
+						tmpAnswer = "Relationship: " + data3[j].end1.reference.name + "(" + data3[j].end1.cardinality + ") <--> " + data3[j].end2.reference.name + "(" + data3[j].end2.cardinality + ")"
+						tmpClassAnswer.push(tmpAnswer)
+						tmpAnswer = ""
+					}
+				}
+			}
+		}
+		
+		//copy tmpClassAnswer to studentAnswer
+		studentAnswer.push(tmpClassAnswer)
+        tmpClassAnswer = []
+	}
 	//console.log(studentAnswer)
 	return studentAnswer;
 }

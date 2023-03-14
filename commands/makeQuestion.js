@@ -5,11 +5,11 @@ const command = {
         
         const { superior: diagramJudge} = command;
 
-        const api = diagramJudge.getLoginApi();
+        //const api = diagramJudge.getLoginApi();
         let base = null;
 		let b = null;
 
-        app.elementPickerDialog.showDialog('Select a base model to make question', null, type.UMLModelElement).then(function ({buttonId, returnValue})
+        app.elementPickerDialog.showDialog('Select a base model to make question', null, type.ExtensibleModel).then(function ({buttonId, returnValue})
 		{
 			if (buttonId === 'ok') 
 			{
@@ -26,6 +26,8 @@ const command = {
 					{c = _make_OD_Question(base)}
 				if(base.ownedElements[0] instanceof type.UMLInteraction)
 					{c = _make_SD_Question(base)}
+				if(base.ownedElements[0] instanceof type.ERDDiagram)
+					{c = _make_ERD_Question(base)}
 				
                 //console.log(c)
 				c = JSON.stringify(c)
@@ -157,7 +159,9 @@ function _make_UCD_Question(base)
 		tmpQuestionText += '{"name":"' + c[i][0] + '","ownedAnswers":[';
 		for(var j = 1; j < c[i].length; j++)
 		{
-			if(c[i][j].indexOf("Association") >= 0){tmpQuestionTextInClass += '{"Association":"' + c[i][j] + '"},';}
+			if(c[i][j].indexOf("Actor") >= 0){tmpQuestionTextInClass += '{"Actor":"' + c[i][j] + '"},';}
+			else if(c[i][j].indexOf("UseCase") >= 0){tmpQuestionTextInClass += '{"UseCase":"' + c[i][j] + '"},';}
+			else if(c[i][j].indexOf("Association") >= 0){tmpQuestionTextInClass += '{"Association":"' + c[i][j] + '"},';}
 			else if(c[i][j].indexOf("Generalization") >= 0){tmpQuestionTextInClass += '{"Generalization":"' + c[i][j] + '"},';}
 			else if(c[i][j].indexOf("Dependency") >= 0){tmpQuestionTextInClass += '{"Dependency":"' + c[i][j] + '"},';}
 			else if(c[i][j].indexOf("Include") >= 0){tmpQuestionTextInClass += '{"Include":"' + c[i][j] + '"},';}
@@ -228,8 +232,9 @@ function _make_OD_Question(base)
 		for(var j = 1; j < c[i].length; j++)
 		{
 			if(c[i][j].indexOf("ObjectClass") >= 0){tmpQuestionTextInClass += '{"ObjectClass":"' + c[i][j] + '"},';}
+			else if(c[i][j].indexOf("ObjectName:") >= 0){tmpQuestionTextInClass += '{"ObjectName:":"' + c[i][j] + '"},';}
 			else if(c[i][j].indexOf("Indirect link") >= 0){tmpQuestionTextInClass += '{"Indirect link":"' + c[i][j] + '"},';}
-			else if(c[i][j].indexOf("Slot") >= 0){tmpQuestionTextInClass += '{"Class":"' + c[i][j] + '"},';}
+			else if(c[i][j].indexOf("Slot") >= 0){tmpQuestionTextInClass += '{"Slot":"' + c[i][j] + '"},';}
 			//tmpQuestionTextInClass += '{"name":"' + c[i][j] + '"},';
 		}
 		tmpQuestionTextInClass = tmpQuestionTextInClass.slice(0,-1);
@@ -295,8 +300,77 @@ function _make_SD_Question(base)
 		tmpQuestionText += '{"name":"' + c[i][0] + '","ownedAnswers":[';
 		for(var j = 1; j < c[i].length; j++)
 		{
-			if(c[i][j].indexOf("Interaction") >= 0){tmpQuestionTextInClass += '{"Interaction":"' + c[i][j] + '"},';}
-			else if(c[i][j].indexOf("Message") >= 0){tmpQuestionTextInClass += '{"Message":"' + c[i][j] + '"},';}
+			if(c[i][j].indexOf("Interaction") == 0){tmpQuestionTextInClass += '{"Interaction":"' + c[i][j] + '"},';}
+			else if(c[i][j].indexOf("Message") == 0){tmpQuestionTextInClass += '{"Message":"' + c[i][j] + '"},';}
+			//tmpQuestionTextInClass += '{"name":"' + c[i][j] + '"},';
+		}
+		tmpQuestionTextInClass = tmpQuestionTextInClass.slice(0,-1);
+		tmpQuestionText += tmpQuestionTextInClass + ']},';
+		tmpQuestionTextInClass = ''
+	}
+	tmpQuestionText = tmpQuestionText.slice(0,-1) + ']}';
+	console.log(tmpQuestionText)
+    return tmpQuestionText
+	                /*app.dialogs.showTextDialog("Please input the description of the question. ", "").then(function ({buttonId, returnValue})
+					{
+						if(buttonId === 'ok')
+						{
+							questionDescription = returnValue
+							
+							console.log(questionCount)
+							
+							//sql = "INSERT INTO `uml_judge_questions_2` (question_number,standard_answers_text,question_description) VALUES (" + questionCount + ", '" + tmpQuestionText + "', '" + questionDescription/* + ', ' + questionFile + "')";
+							sql = "INSERT INTO `uml_judge_questions` (question_number,standard_answers_text,question_description) VALUES (" + questionCount + ", '" + tmpQuestionText + "', '" + questionDescription/* + ', ' + questionFile + "')";
+							console.log(sql)
+							connection.query(sql,function (err, result) 
+							{
+								if(err)
+								{
+									console.log('[SELECT ERROR] - ',err.message);
+									return;
+								}
+							});
+						}
+					})*/
+}
+
+function _make_ERD_Question(base)
+{
+	var sql = ''
+	var QuestionText = ""
+	var tmpQuestionText = ""
+	var tmpQuestionTextInClass = ""
+	var questionDescription = ""
+	var questionCount = 0;
+	
+	
+	//sql = 'SELECT MAX(`question_number`) FROM `uml_judge_questions` AS maxCount'
+	//sql = 'SELECT MAX(`question_number`) FROM `uml_judge_questions_2` AS maxCount'
+
+	/*connection.query(sql,function (err, result) 
+	{
+		if(err)
+		{
+			console.log('[SELECT ERROR] - ',err.message);
+			return;
+		}
+		console.log(result)
+		questionCount = result[0]['MAX(`question_number`)'] + 1
+		console.log(questionCount)
+	});*/		
+		
+	var c = _abstract_ERD_FromStudentAnswer(base)
+    //console.log(c)
+	tmpQuestionText += '{"Answers":[';
+	for (var i = 0; i < c.length; i++)
+	{
+		tmpQuestionText += '{"name":"' + c[i][0] + '","ownedAnswers":[';
+		for(var j = 1; j < c[i].length; j++)
+		{
+			console.log(c[i][j].indexOf("Entity"))
+			if(c[i][j].indexOf("Entity") == 0){tmpQuestionTextInClass += '{"Entity":"' + c[i][j] + '"},';}
+			else if(c[i][j].indexOf("Column") == 0){tmpQuestionTextInClass += '{"Column":"' + c[i][j] + '"},';}
+			else if(c[i][j].indexOf("Relationship") == 0){tmpQuestionTextInClass += '{"Relationship":"' + c[i][j] + '"},';}
 			//tmpQuestionTextInClass += '{"name":"' + c[i][j] + '"},';
 		}
 		tmpQuestionTextInClass = tmpQuestionTextInClass.slice(0,-1);
@@ -480,6 +554,8 @@ function _abstract_UCD_FromStudentAnswer(baseModel)
 	{
 		data1 = baseModel.ownedElements[i]//abstract a class from base model
 		//tmpClassAnswer.push(data1.type)
+
+		tmpClassAnswer.push(data1.name)
 		if(data1 instanceof type.UMLUseCaseSubject)
 		{
 			tmpAnswer = "UseCaseSubject  " + data1.name
@@ -599,9 +675,18 @@ function _abstract_OD_FromStudentAnswer(baseModel)
 			data3 = data1.slots
 			for (j = 0; j < Object.keys(data3).length; j++)
 			{
-				tmpAnswer = "Slot:  " + data3[j].name + ": " + data3[j].type + " = " + data3[j].value
-				tmpClassAnswer.push(tmpAnswer)
-				tmpAnswer = ""
+				if(data3[j].value != "")
+				{
+					tmpAnswer = "Slot:  " + data3[j].name + ": " + data3[j].type + " = " + data3[j].value
+					tmpClassAnswer.push(tmpAnswer)
+					tmpAnswer = ""
+				}
+				else
+				{
+					tmpAnswer = "Slot:  " + data3[j].name + ": = " + data3[j].type
+					tmpClassAnswer.push(tmpAnswer)
+					tmpAnswer = ""
+				}
 			}
 		}
 		
@@ -643,6 +728,70 @@ function _abstract_SD_FromStudentAnswer(baseModel)
 	//copy tmpClassAnswer to studentAnswer
 	studentAnswer.push(tmpClassAnswer)
 	tmpClassAnswer = []
+	//console.log(studentAnswer)
+	return studentAnswer;
+}
+
+function _abstract_ERD_FromStudentAnswer(baseModel)
+{
+	var studentAnswer = []
+	var tmpAnswer = ""
+	var tmpClassAnswer = []
+	var data1 = [], data2 = [], data3 = [],data4 = []
+
+	var Entity_count = Object.keys(baseModel.ownedElements).length
+	
+	//abstract the charactoristic from the base model
+	for (i = 1; i < Entity_count; i++)
+	{
+		data1 = baseModel.ownedElements[i]//abstract a class from base model
+		//tmpClassAnswer.push(data1.type)
+
+		tmpClassAnswer.push(data1.name)
+		
+		if(data1 instanceof type.ERDEntity)
+		{
+			tmpAnswer = "Entity name:  " + data1.name
+			tmpClassAnswer.push(tmpAnswer)
+			tmpAnswer = ""
+			if(data1.hasOwnProperty('columns'))
+			{
+				data2 = data1.columns
+				//console.log(data2.type)
+				for(let j = 0;j < Object.keys(data2).length;j++)
+				{
+					if(data2[j] instanceof type.ERDColumn)
+					{
+						tmpAnswer = "Column: "
+						if(data2[j].foreignKey == true) tmpAnswer += "FK,"
+						if(data2[j].primaryKey == true) tmpAnswer += "PK,"
+						if(data2[j].nullable == true) tmpAnswer += "N,"
+						if(data2[j].unique == true) tmpAnswer += "U,"
+						tmpAnswer += " | " + data2[j].name + " | " + data2[j].type + "(" + data2[j].length + ")"
+						tmpClassAnswer.push(tmpAnswer)
+						tmpAnswer = ""
+					}
+				}
+			}
+			if(data1.hasOwnProperty('ownedElements'))
+			{
+				data3 = data1.ownedElements
+				for(let j = 0;j < Object.keys(data3).length;j++)
+				{
+					if(data3[j] instanceof type.ERDRelationship)
+					{
+						tmpAnswer = "Relationship: " + data3[j].end1.reference.name + "(" + data3[j].end1.cardinality + ") <--> " + data3[j].end2.reference.name + "(" + data3[j].end2.cardinality + ")"
+						tmpClassAnswer.push(tmpAnswer)
+						tmpAnswer = ""
+					}
+				}
+			}
+		}
+		
+		//copy tmpClassAnswer to studentAnswer
+		studentAnswer.push(tmpClassAnswer)
+        tmpClassAnswer = []
+	}
 	//console.log(studentAnswer)
 	return studentAnswer;
 }

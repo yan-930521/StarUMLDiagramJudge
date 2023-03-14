@@ -1,6 +1,6 @@
-//const jsdom = require('jsdom')
+var jsdom = require('jsdom')
 //const dom = new jsdom.JSDOM("")
-const $ = require('jquery')
+var $ = require('jquery')(new jsdom.JSDOM().window)
 const util = require('util');
 const express = require("express");
 const cors = require("cors");
@@ -26,17 +26,20 @@ const sql_connection = mysql.createConnection({
 });
 
 module.exports = class {
-	constructor(connection = null) {
-		this.connection = connection || sql_connection;
+	constructor(config = null, getSqlConnection) {
+		this.config = config;
+		this.getSqlConnection = getSqlConnection;
 	}
 
 	_startJudging = async (st_id, stdAns, p_num) => {
-		let standardAnswer = await this._abstractFromDataBase(p_num)
-		console.log("standardAnswer:\n" + standardAnswer)
+		let judge_result = ""
+		let standardAnswer = await this._abstractFromDataBase(p_num).catch(err => console.log(err))
+		//console.log("standardAnswer:\n" + standardAnswer)
 		let studentAnswer = this._abstractFromAPI(stdAns)
-		console.log("studentAnswer:\n" + studentAnswer)
-		let uploadCount = await this._getStUploadCount(st_id, p_num)
-		let judge_result = this._judge(studentAnswer, standardAnswer, st_id, p_num, uploadCount)
+		//console.log("studentAnswer:\n" + studentAnswer)
+		let uploadCount = await this._getStUploadCount(st_id, p_num).catch(err => console.log(err))
+		judge_result = await this._judge(studentAnswer, standardAnswer, st_id, p_num, uploadCount)
+		console.log(judge_result)
 		return judge_result
 	}
 
@@ -50,28 +53,29 @@ module.exports = class {
 	}
 
 	_getStUploadCount = async (st_id, p_num) => {
-		let sql = "SELECT count(`id`) FROM `result` WHERE `st_id` = '" + st_id + "' AND `pid` = '" + p_num + "'";
-		return new Promise((res, rej) => {
-		this.connection.query(sql, function (err, result) {
-			if (err) {
-				console.log('[SELECT ERROR] - ', err.message);
-				res(1);
-			}
-			else res(result[0]['count(`id`)'] + 1);
-		});
-		res(1);
-	})
+		let sql = "SELECT count(`id`) FROM `uml_judge_result` WHERE `st_id` = '" + st_id + "' AND `pid` = '" + p_num + "'";
+		return new Promise(async (res, rej) => {
+			let connection = await this.getSqlConnection(this.config);
+			connection.query(sql, function (err, result) {
+				if (err) {
+					console.log('[SELECT ERROR] - ', err.message);
+					res(1);
+				}
+				else res(result[0]['count(`id`)'] + 1);
+			});
+			res(1);
+		})
 	}
 
 	_abstractFromDataBase = (p_num) => {
+		CorrectAnswer = []
 		let questionToBeJudged_json = null
 		let questionToBeJudged_String = null
 		let sql = 'SELECT `standard_answers_text` FROM `uml_judge_questions` WHERE `question_number` = ' + p_num;
 		console.log(sql)
-		return new Promise((res, rej) => {
-
-
-			this.connection.query(sql, function (err, result) {
+		return new Promise(async (res, rej) => {
+			let connection = await this.getSqlConnection(this.config);
+			connection.query(sql, function (err, result) {
 				if (err) {
 					console.log('[SELECT ERROR] - ', err.message);
 					rej(err.message)
@@ -95,16 +99,16 @@ module.exports = class {
 						totalAnswers++;
 					}
 					CorrectAnswer.push(tmpClassofCorrecAnswer)
-					console.log("1:\n" + CorrectAnswer)
+					//console.log("1:\n" + CorrectAnswer)
 					tmpClassofCorrecAnswer = []
 				}
-				console.log("2:\n" + CorrectAnswer)
+				//console.log("2:\n" + CorrectAnswer)
 				res(CorrectAnswer)
 			});
 		});
 	}
 
-	_judge = (studentAnswer, CorrectAnswer, studentID, question, upload) => {
+	_judge = async (studentAnswer, CorrectAnswer, studentID, question, upload) => {
 		var x = 0;
 		//var tmpResult = []
 		var idCount = 0;
@@ -124,6 +128,7 @@ module.exports = class {
 		var tmpTimeStamp2 = ""
 		var filePathToSend = ""
 
+
 		tmpTimeStamp1 = this.getCurrentTime();
 		console.log(tmpTimeStamp1)
 
@@ -138,13 +143,13 @@ module.exports = class {
 			judgeResultsInClass_1 = []
 		}
 		else {
-			for (i = 0; i < studentAnswer.length; i++) {
+			for (let i = 0; i < studentAnswer.length; i++) {
 				if (correctAnswerClass.includes(studentAnswer[i][0])) {
-					for (j = 0; j < CorrectAnswer.length; j++) {
+					for (let j = 0; j < CorrectAnswer.length; j++) {
 						if ((studentAnswer[i][0] == CorrectAnswer[j][0]) && (studentAnswer[i].length >= CorrectAnswer[j].length)) {
 							console.log(studentAnswer[i][0] + ": Correct instance name.")
 							judgeResultsInClass_2.push(studentAnswer[i][0] + ": Correct instance name." + "\n")
-							for (k = 1; k < CorrectAnswer[j].length; k++) {
+							for (let k = 1; k < CorrectAnswer[j].length; k++) {
 								if (CorrectAnswer[j].includes(studentAnswer[i][k])) {
 									//console.log("\t" + studentAnswer[i][k] + " is Correct.")
 									judgeResultsInClass_2.push("    " + studentAnswer[i][k] + " is Correct." + "\n")
@@ -174,23 +179,22 @@ module.exports = class {
 						//console.log("Student's Answers which is wrong: ")
 						judgeResultsInClass_1.push("Student's Unexpected Answers : " + "\n")
 						judgeResultsInClass_2.push("Student's Unexpected Answers : " + "\n")
-						for (l = 0; l < wrongAnswersInClass.length; l++) {
+						for (let l = 0; l < wrongAnswersInClass.length; l++) {
 							//console.log("\t" + wrongAnswersInClass[l])
 							judgeResultsInClass_1.push("    " + wrongAnswersInClass[l] + "\n")
 							judgeResultsInClass_2.push("    " + wrongAnswersInClass[l] + "\n")
 						}
 						//console.log("Expected Answers: ")
-						judgeResultsInClass_1.push("Expected Answers: ")
-						judgeResultsInClass_2.push("Expected Answers: ")
+						judgeResultsInClass_1.push("Expected Answers: " + "\n")
+						judgeResultsInClass_2.push("Expected Answers: " + "\n")
 						//console.log(expectedAnswersInClass)
-						for (l = 0; l < expectedAnswersInClass.length; l++) {
+						for (let l = 0; l < expectedAnswersInClass.length; l++) {
 							//console.log("\t" + expectedAnswersInClass[l])
 							judgeResultsInClass_1.push("    " + expectedAnswersInClass[l] + "\n")
 							judgeResultsInClass_2.push("    " + expectedAnswersInClass[l] + "\n")
 						}
 						wrongAnswersInClass = []
 					}
-
 					judgeResultsToBeShown.push(judgeResultsInClass_1)
 					judgeResultsToBeSend.push(judgeResultsInClass_2)
 					judgeResultsInClass_1 = []
@@ -219,21 +223,21 @@ module.exports = class {
 		if (percent == 100.00) tmpStatus = "All_Pass"
 		else tmpStatus = "Some_Case_Not_Pass"
 
-		console.log(studentID, questionNumber, totalAnswers, sumOfCorrectAnswers, percent)
-		var judgeGrade = "Question number: " + questionNumber + "\nTotal answers: " + totalAnswers + "\nCorrect Answers: " + sumOfCorrectAnswers + "\npercent: " + percent + "\n"
+		console.log(studentID, question, totalAnswers, sumOfCorrectAnswers, percent, tmpStatus)
+		var judgeGrade = "Question Number: " + question + "\nTotal Answers: " + totalAnswers + "\nCorrect Answers: " + sumOfCorrectAnswers + "\nPercent: " + percent + "\nStatus: " + tmpStatus + "\n"
 		judgeResultsFinal.push(judgeGrade)
 		judgeGrade = []
-		judgeResultsFinal.push(judgeResultsToBeShown)
-		console.log(judgeResultsToBeShown)
-		console.log(judgeResultsToBeSend)
+		judgeResultsFinal.push(judgeResultsToBeSend)
+		//console.log("A="+judgeResultsToBeShown)
+		//console.log("B="+judgeResultsToBeSend)
 		//show the result to user with an InfoDialog
 		var judgeResultsString = judgeResultsFinal.join("")
-		//judgeResultsString.replace(',', '\n')
-		
+		judgeResultsString.replace(',', '\n')
+
 		// 伺服端沒app的實體
 		// app.dialogs.showInfoDialog(judgeResultsString)
 
-		/*let sql = 'SELECT MAX(`id`) FROM `result` AS maxCount_1'
+		/*let sql = 'SELECT MAX(`id`) FROM `uml_judge_result` AS maxCount_1'
 		this.connection.query(sql,function (err, result) 
 		{
 			if(err)
@@ -242,59 +246,45 @@ module.exports = class {
 			  return;
 			}
 			idCount = result[0]['MAX(`id`)'] + 1
-		});
-	
+		});*/
+
 		//insert the result into the database
 		//console.log(uploadCount)
-		sql = "INSERT INTO `result`(`pid`, `st_id`, `upload_count`, `score`, `total_pass`, `total_data`, `status`, `upload_time`, `judge_time`, `ip`) VALUES ('"+question+"','"+studentID+"','"+upload+"','"+percent+"','"+sumOfCorrectAnswers+"','"+totalAnswers+"','"+tmpStatus+"','"+tmpTimeStamp1+"','"+tmpTimeStamp2+"','"+tmpIP+"')";
+		sql = "INSERT INTO `uml_judge_result`(`pid`, `uid`, `upload_count`, `score`, `total_pass`, `total_data`, `status`, `upload_time`, `judge_time`) VALUES ('" + question + "','" + studentID + "','" + upload + "','" + percent + "','" + sumOfCorrectAnswers + "','" + totalAnswers + "','" + tmpStatus + "','" + tmpTimeStamp1 + "','" + tmpTimeStamp2 + "')";
 		console.log(sql)
-		connection.query(sql,function (err, result) 
-		{
-			if(err)
-			{
-			  console.log('[SELECT ERROR] - ',err.message);
-			  return;
+		let connection = await this.getSqlConnection(this.config);
+		connection.query(sql, function (err, result) {
+			if (err) {
+				console.log('[SELECT ERROR] - ', err.message);
+				return;
 			}
 			console.log(result);
 		});
-	
-		//filePathToSend = "D:/xampp5.6/htdocs/ntcu-csko-oop-ntcu-csko-oop-web-22a84ac77bc0/public/st/"+question+"/"+studentID+"/"+upload
-	
-	/*fs.mkdir(filePathToSend, 0666,  (err) => 
-		{
-			if(err) {
-			throw err;
-			}
-			console.log("mkdir");
-		});
 
-	fs.writeFile(filePathToSend + "/log.txt", "", (err) => 
-		{
-			if(err) {
-			throw err;
-			}
-			console.log("open file");
-		});
-		
-	for(var i = 0;i < judgeResultsToBeSend.length;i++)
-	{
-		if(judgeResultsToBeSend.length == 1)
-		{
-			console.log(judgeResultsToBeSend[i][j])
-			fs.appendFile(filePathToSend + "/log.txt", judgeResultsToBeSend[i], (err) => 
+		//filePathToSend = "D:/xampp5.6/htdocs/ntcu-csko-oop-ntcu-csko-oop-web-22a84ac77bc0/public/st/"+question+"/"+studentID+"/"+upload
+
+		/*fs.mkdir(filePathToSend, 0666,  (err) => 
 			{
 				if(err) {
 				throw err;
 				}
-				console.log("Data has been written to file successfully.");
+				console.log("mkdir");
 			});
-		}
-		else
+	
+		fs.writeFile(filePathToSend + "/log.txt", "", (err) => 
+			{
+				if(err) {
+				throw err;
+				}
+				console.log("open file");
+			});
+			
+		for(var i = 0;i < judgeResultsToBeSend.length;i++)
 		{
-			for(var j = 0;j < judgeResultsToBeSend[i].length;j++)
+			if(judgeResultsToBeSend.length == 1)
 			{
 				console.log(judgeResultsToBeSend[i][j])
-				fs.appendFile(filePathToSend + "/log.txt", judgeResultsToBeSend[i][j], (err) => 
+				fs.appendFile(filePathToSend + "/log.txt", judgeResultsToBeSend[i], (err) => 
 				{
 					if(err) {
 					throw err;
@@ -302,13 +292,27 @@ module.exports = class {
 					console.log("Data has been written to file successfully.");
 				});
 			}
-		}
-	}*/
-
+			else
+			{
+				for(var j = 0;j < judgeResultsToBeSend[i].length;j++)
+				{
+					console.log(judgeResultsToBeSend[i][j])
+					fs.appendFile(filePathToSend + "/log.txt", judgeResultsToBeSend[i][j], (err) => 
+					{
+						if(err) {
+						throw err;
+						}
+						console.log("Data has been written to file successfully.");
+					});
+				}
+			}
+		}*/
+		console.log(judgeResultsString)
 		questionNumber = 0;
 		totalAnswers = 0;
 		sumOfCorrectAnswers = 0;
 		percent = 0.00;
+		return judgeResultsString
 
 	}
 
