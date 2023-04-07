@@ -6,7 +6,6 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <script src="./test3.js"></script>
 </head>
 
 <body>
@@ -19,7 +18,7 @@
         <div id="status"></div>
     </div>
     <div id="questionPage">
-        
+
     </div>
     <script>
 
@@ -41,7 +40,7 @@
             &buttons
             <iframe id="myframe" height="200" width="300" title="Iframe Example" allow-scripts="true"></iframe>
         </div>`
-        const buttonTemplate = '<input type="button" value="需求&buttonId." onclick="aaa(&buttonId);" class="btn"'
+        const buttonTemplate = '<input type="button" value="需求&buttonId." onclick="onFocus(&buttonId, `&qusetion`);" class="btn">'
         loginBtn.onclick = () => {
             if (pwd.value == "" || acc.value == "") return;
             fetch(apiUrls["login"], {
@@ -84,21 +83,33 @@
                     }).then((res) => {
                         return res.json();
                     }).catch(err => {
-                        rej(err);
+                        console.error(err);
                     });
 
+                    console.log(respond);
+
                     let question = {
-                        question_title: "",
-                        question_description: "",
+                        question_title: "question_title",
+                        question_description: "question_description",
+                        question_demands: [
+                            "實體型態包含：醫師（Doctor）、住院病人（InPatient）、檢驗項目（TestItem）、病房（Room）。 ",
+                            "醫師有三個屬性：代號（dId）、姓名（dName）、性別 （gender）。其中代號是唯一的。 ",
+                            "住院病人有三個屬性：病人代號（pId）、姓名（pName）、緊急聯 絡人（contact），其中緊急聯絡人可以有多位，且必須記載緊急聯絡人之姓名（name）與電話（phone）。此外病人代號是唯一的。",
+                            "檢驗項目有兩個屬性：項目代號（tId）、名稱（tName）。其中項 目代號是唯一的。",
+                            "病房有兩個屬性：房號（rNo）、等級（level）。其中房號是唯一的。",
+                            "每一位住院病人必定有一位主治醫師；每個醫生可以看很多住院病人，至少需要看一個住院病人。",
+                            "每一位住院病人可以有多個檢驗項目，檢驗日期 （date）必須記載；每個住院病人至少要有一個檢驗項目。",
+                            "每一個病房可以最多住六個住院病人，也可能是空病房；每個住院病人只能住在一間病房。",
+                            "每一個醫生可以檢視多個檢驗項目；每個檢驗項目可以被多個醫生檢驗。"
+                        ]
 
                     } //respond.data;
 
-                    let descriptions = question.question_description.split("\n");
-
 
                     let buttons = "";
-                    for(let d in description){
-                        buttons += buttonTemplate.replace("&buttonId", d).replace("&buttonId", d)
+                    for (let d in question.question_demands) {
+                        console.log(question.question_demands[d], buttons)
+                        buttons += buttonTemplate.replace("&buttonId", d).replace("&buttonId", d).replace("&qusetion", question.question_demands[d])
                     }
 
                     questionPage.innerHTML = QusetionTemplate
@@ -114,7 +125,27 @@
             pwd.value = "";
         }
 
-        
+        var timer = null;
+        const time = 5000;
+        function onFocus(number, qusetion) {
+            //window.clearTimeout(x)
+            const iframeWindow = document.getElementsByTagName('iframe')[0].contentWindow;
+            iframeWindow.document.body.innerHTML = qusetion;
+            startTimer()
+        }
+
+        var startTimer = function () {
+            window.clearTimeout(timer);
+            timer = window.setTimeout("turndown()", time);
+        }
+
+        function turndown() {
+            const iframeWindow = document.getElementsByTagName('iframe')[0].contentWindow;
+            console.log(iframeWindow)
+            iframeWindow.document.body.innerHTML = ''
+        }
+
+
 
     </script>
 </body>

@@ -14,9 +14,10 @@ module.exports = class DiagramJudge {
         this.user = null;
         this.isLogin = false;
 
+        /*
         this.fetchData("questions").then((questions) => {
             this.renderPage(questions.data);
-        });
+        });*/
 
     }
 

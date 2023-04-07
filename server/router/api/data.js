@@ -15,8 +15,13 @@ const api = {
                 errorMsg: true
             }
             respond.data =  await api.superior.fetchData(dataName, JSON.parse(_arguments)).catch(err => {
-                respond.error = true;
-                respond.errorMsg = err.toString()
+                if(err) {
+                    respond.error = true;
+                    respond.errorMsg = err.toString()
+                }
+
+                console.log(err);
+                
             });
             res.send(respond);
         }
