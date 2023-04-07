@@ -1,7 +1,3 @@
-const { packageRouter } = require("../../Server.js");
-
-const statusCache = {}
-
 const api = {
     path: "/login",
     superior: null,
@@ -13,8 +9,8 @@ const api = {
             } = req.query;
 
             res.send({
-                account: statusCache[uuid] ? statusCache[uuid].account : null,
-                statusCode: statusCache[uuid] ? statusCache[uuid].statusCode : api.superior.Types.STATUS["USERNOTFOUND"],
+                account: api.superior.statusCache[uuid] ? api.superior.statusCache[uuid].account : null,
+                statusCode: api.superior.statusCache[uuid] ? api.superior.statusCache[uuid].statusCode : api.superior.Types.STATUS["USERNOTFOUND"],
             });
         },
         post: async (req, res) => {
@@ -26,25 +22,25 @@ const api = {
 
             let success = await api.superior.checkLogin(account, password);
 
-            statusCache[uuid] = {
+            api.superior.statusCache[uuid] = {
                 account: account,
                 statusCode: api.superior.Types.STATUS[success ? "ONLINE" : "OFFLINE"],
             }
 
-            res.send(statusCache[uuid]);
+            res.send(api.superior.statusCache[uuid]);
         },
         delete: (req, res) => {
             const {
                 uuid
             } = req.query;
 
-            if (statusCache[uuid]) {
-                statusCache[uuid].statusCode = api.superior.Types.STATUS["OFFLINE"];
+            if (api.superior.statusCache[uuid]) {
+                api.superior.statusCache[uuid].statusCode = api.superior.Types.STATUS["OFFLINE"];
             }
 
             res.send({
-                account: statusCache[uuid] ? statusCache[uuid].account : null,
-                statusCode: api.superior.Types.STATUS[statusCache[uuid] ? "OFFLINE" : "USERNOTFOUND"],
+                account: api.superior.statusCache[uuid] ? api.superior.statusCache[uuid].account : null,
+                statusCode: api.superior.Types.STATUS[api.superior.statusCache[uuid] ? "OFFLINE" : "USERNOTFOUND"],
             });
         }
     }

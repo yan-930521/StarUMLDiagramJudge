@@ -38,9 +38,9 @@ const command = {
 						c = _abstract_SD_FromStudentAnswer(base)
 						p = 4
 					}
-				if(base.ownedElements[0] instanceof type.ERDDiagram)
+				if(base.ownedElements[0] instanceof type.ERMDiagram)
 					{
-						c = _abstract_ERD_FromStudentAnswer(base)
+						c = _abstract_ERM_FromStudentAnswer(base)
 						p = 5
 					}
 				
@@ -48,7 +48,7 @@ const command = {
 				c = JSON.stringify(c)
 				//c = c.replaceAll("\"", "\'");
 				console.log(c)
-                    //fetch("http://localhost:3000/api/judge?" + `st_id=1&baseModel=${(c)}&p_num=${(p)}`, 
+                    //fetch("120.108.204.99:3000/api/judge?" + `st_id=1&baseModel=${(c)}&p_num=${(p)}`, 
 					fetch(diagramJudge.getApi("judge") + `?st_id=1&baseModel=${(c)}&p_num=${(p)}`, 
 					{
                         headers: {
@@ -403,7 +403,7 @@ function _abstract_SD_FromStudentAnswer(baseModel)
 	return studentAnswer;
 }
 
-function _abstract_ERD_FromStudentAnswer(baseModel)
+function _abstract_ERM_FromStudentAnswer(baseModel)
 {
 	var studentAnswer = []
 	var tmpAnswer = ""
@@ -420,38 +420,45 @@ function _abstract_ERD_FromStudentAnswer(baseModel)
 
 		tmpClassAnswer.push(data1.name)
 		
-		if(data1 instanceof type.ERDEntity)
+		if(data1 instanceof type.ERMEntity)
 		{
 			tmpAnswer = "Entity name:  " + data1.name
 			tmpClassAnswer.push(tmpAnswer)
 			tmpAnswer = ""
-			if(data1.hasOwnProperty('columns'))
+		}
+
+		else if(data1 instanceof type.ERMRelationshipEntry)
+		{
+			tmpAnswer = "RelationshipEntry name:  " + data1.name
+			tmpClassAnswer.push(tmpAnswer)
+			tmpAnswer = ""
+			if (data1.hasOwnProperty('ownedElements'))
 			{
-				data2 = data1.columns
-				//console.log(data2.type)
-				for(let j = 0;j < Object.keys(data2).length;j++)
+				data2 = data1.ownedElements
+				for (j = 0;j < Object.keys(data2).length; j++)
 				{
-					if(data2[j] instanceof type.ERDColumn)
+					if (data2[j] instanceof type.ERMRelationship)
 					{
-						tmpAnswer = "Column: "
-						if(data2[j].foreignKey == true) tmpAnswer += "FK,"
-						if(data2[j].primaryKey == true) tmpAnswer += "PK,"
-						if(data2[j].nullable == true) tmpAnswer += "N,"
-						if(data2[j].unique == true) tmpAnswer += "U,"
-						tmpAnswer += " | " + data2[j].name + " | " + data2[j].type + "(" + data2[j].length + ")"
+						tmpAnswer = "Relationship:  " + data2[j].end1.reference.name + "-->" + data2[j].end2.reference.name + "(" + data2[j].end2.cardinality + ")"
 						tmpClassAnswer.push(tmpAnswer)
 						tmpAnswer = ""
 					}
 				}
 			}
-			if(data1.hasOwnProperty('ownedElements'))
+		}
+		else if(data1 instanceof type.ERMAttribute)
+		{
+			tmpAnswer = "Attribute name:  " + data1.name
+			tmpClassAnswer.push(tmpAnswer)
+			tmpAnswer = ""
+			if (data1.hasOwnProperty('ownedElements'))
 			{
-				data3 = data1.ownedElements
-				for(let j = 0;j < Object.keys(data3).length;j++)
+				data2 = data1.ownedElements
+				for (j = 0;j < Object.keys(data2).length; j++)
 				{
-					if(data3[j] instanceof type.ERDRelationship)
+					if (data2[j] instanceof type.ERMAttributeSubordinate)
 					{
-						tmpAnswer = "Relationship: " + data3[j].end1.reference.name + "(" + data3[j].end1.cardinality + ") <--> " + data3[j].end2.reference.name + "(" + data3[j].end2.cardinality + ")"
+						tmpAnswer = "AttributeSubordinate:  " + data2[j].end2.reference.name + " has an attribute " + data2[j].end1.reference.name 
 						tmpClassAnswer.push(tmpAnswer)
 						tmpAnswer = ""
 					}

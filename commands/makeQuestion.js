@@ -26,12 +26,12 @@ const command = {
 					{c = _make_OD_Question(base)}
 				if(base.ownedElements[0] instanceof type.UMLInteraction)
 					{c = _make_SD_Question(base)}
-				if(base.ownedElements[0] instanceof type.ERDDiagram)
-					{c = _make_ERD_Question(base)}
+				if(base.ownedElements[0] instanceof type.ERMDiagram)
+					{c = _make_ERM_Question(base)}
 				
                 //console.log(c)
 				c = JSON.stringify(c)
-                    fetch("http://localhost:3000/api/make_question?" + `baseModel=${(c)}`, {
+                    fetch("https://oop99.seilab.uk:3000/api/make_question?" + `baseModel=${(c)}`, {
                         headers: {
                             'user-agent': 'Mozilla/4.0 MDN Example',
                             'content-type': 'application/json',
@@ -334,7 +334,7 @@ function _make_SD_Question(base)
 					})*/
 }
 
-function _make_ERD_Question(base)
+function _make_ERM_Question(base)
 {
 	var sql = ''
 	var QuestionText = ""
@@ -359,7 +359,7 @@ function _make_ERD_Question(base)
 		console.log(questionCount)
 	});*/		
 		
-	var c = _abstract_ERD_FromStudentAnswer(base)
+	var c = _abstract_ERM_FromStudentAnswer(base)
     //console.log(c)
 	tmpQuestionText += '{"Answers":[';
 	for (var i = 0; i < c.length; i++)
@@ -367,9 +367,11 @@ function _make_ERD_Question(base)
 		tmpQuestionText += '{"name":"' + c[i][0] + '","ownedAnswers":[';
 		for(var j = 1; j < c[i].length; j++)
 		{
-			console.log(c[i][j].indexOf("Entity"))
+			//console.log(c[i][j].indexOf("Entity"))
 			if(c[i][j].indexOf("Entity") == 0){tmpQuestionTextInClass += '{"Entity":"' + c[i][j] + '"},';}
-			else if(c[i][j].indexOf("Column") == 0){tmpQuestionTextInClass += '{"Column":"' + c[i][j] + '"},';}
+			else if(c[i][j].indexOf("Attribute") == 0){tmpQuestionTextInClass += '{"Attribute":"' + c[i][j] + '"},';}
+			else if(c[i][j].indexOf("AttributeSubordinate") == 0){tmpQuestionTextInClass += '{"AttributeSubordinate":"' + c[i][j] + '"},';}
+			else if(c[i][j].indexOf("RelationshipEntry") == 0){tmpQuestionTextInClass += '{"RelationshipEntry":"' + c[i][j] + '"},';}
 			else if(c[i][j].indexOf("Relationship") == 0){tmpQuestionTextInClass += '{"Relationship":"' + c[i][j] + '"},';}
 			//tmpQuestionTextInClass += '{"name":"' + c[i][j] + '"},';
 		}
@@ -732,7 +734,7 @@ function _abstract_SD_FromStudentAnswer(baseModel)
 	return studentAnswer;
 }
 
-function _abstract_ERD_FromStudentAnswer(baseModel)
+function _abstract_ERM_FromStudentAnswer(baseModel)
 {
 	var studentAnswer = []
 	var tmpAnswer = ""
@@ -749,38 +751,45 @@ function _abstract_ERD_FromStudentAnswer(baseModel)
 
 		tmpClassAnswer.push(data1.name)
 		
-		if(data1 instanceof type.ERDEntity)
+		if(data1 instanceof type.ERMEntity)
 		{
 			tmpAnswer = "Entity name:  " + data1.name
 			tmpClassAnswer.push(tmpAnswer)
 			tmpAnswer = ""
-			if(data1.hasOwnProperty('columns'))
+		}
+
+		else if(data1 instanceof type.ERMRelationshipEntry)
+		{
+			tmpAnswer = "RelationshipEntry name:  " + data1.name
+			tmpClassAnswer.push(tmpAnswer)
+			tmpAnswer = ""
+			if (data1.hasOwnProperty('ownedElements'))
 			{
-				data2 = data1.columns
-				//console.log(data2.type)
-				for(let j = 0;j < Object.keys(data2).length;j++)
+				data2 = data1.ownedElements
+				for (j = 0;j < Object.keys(data2).length; j++)
 				{
-					if(data2[j] instanceof type.ERDColumn)
+					if (data2[j] instanceof type.ERMRelationship)
 					{
-						tmpAnswer = "Column: "
-						if(data2[j].foreignKey == true) tmpAnswer += "FK,"
-						if(data2[j].primaryKey == true) tmpAnswer += "PK,"
-						if(data2[j].nullable == true) tmpAnswer += "N,"
-						if(data2[j].unique == true) tmpAnswer += "U,"
-						tmpAnswer += " | " + data2[j].name + " | " + data2[j].type + "(" + data2[j].length + ")"
+						tmpAnswer = "Relationship:  " + data2[j].end1.reference.name + "-->" + data2[j].end2.reference.name + "(" + data2[j].end2.cardinality + ")"
 						tmpClassAnswer.push(tmpAnswer)
 						tmpAnswer = ""
 					}
 				}
 			}
-			if(data1.hasOwnProperty('ownedElements'))
+		}
+		else if(data1 instanceof type.ERMAttribute)
+		{
+			tmpAnswer = "Attribute name:  " + data1.name
+			tmpClassAnswer.push(tmpAnswer)
+			tmpAnswer = ""
+			if (data1.hasOwnProperty('ownedElements'))
 			{
-				data3 = data1.ownedElements
-				for(let j = 0;j < Object.keys(data3).length;j++)
+				data2 = data1.ownedElements
+				for (j = 0;j < Object.keys(data2).length; j++)
 				{
-					if(data3[j] instanceof type.ERDRelationship)
+					if (data2[j] instanceof type.ERMAttributeSubordinate)
 					{
-						tmpAnswer = "Relationship: " + data3[j].end1.reference.name + "(" + data3[j].end1.cardinality + ") <--> " + data3[j].end2.reference.name + "(" + data3[j].end2.cardinality + ")"
+						tmpAnswer = "AttributeSubordinate:  " + data2[j].end2.reference.name + " has an attribute " + data2[j].end1.reference.name 
 						tmpClassAnswer.push(tmpAnswer)
 						tmpAnswer = ""
 					}

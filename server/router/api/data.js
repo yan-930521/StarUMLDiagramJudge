@@ -5,15 +5,18 @@ const api = {
     methods: {
         get: async (req, res) => {
             const {
-                dataName
+                dataName,
+                arguments: _arguments
             } = req.query;
 
             let respond = {
                 data: null,
-                error: false
+                error: false,
+                errorMsg: true
             }
-            respond.data =  await api.superior.fetchData(dataName).catch(err => {
+            respond.data =  await api.superior.fetchData(dataName, JSON.parse(_arguments)).catch(err => {
                 respond.error = true;
+                respond.errorMsg = err.toString()
             });
             res.send(respond);
         }

@@ -20,6 +20,8 @@ module.exports = class Server {
             database2: null
         };
 
+        this.statusCache = {}
+
         for (let c in config)
             this[c] = config[c];
 
@@ -192,10 +194,19 @@ module.exports = class Server {
     /**
      * 取得題目
      */
-    fetchData = (type) => {
+    fetchData = (type, _arguments) => {
         switch (type) {
             case "questions":
                 return this.query2("SELECT * FROM uml_judge_questions");
+            case "read_question":
+                const {
+                    chapterId,
+                    questionId
+                } = _arguments;
+                if(!chapterId || !questionId) {
+                    throw new Error("missing required parameter, chapterId or questionId.");
+                }
+                return this.query2(`SELECT * FROM uml_judge_questionsSELECT * FROM uml_judge_questions WHERE chap_id = '${chapterId}' AND id = '${questionId}';`);
             default:
                 throw new Error("type not define.");
         }

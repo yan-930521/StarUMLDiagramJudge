@@ -1,6 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 
+let url = '';
+
 module.exports = class DiagramJudge {
     constructor(config = {}) {
         this.id = "DiagramJudge";
@@ -55,11 +57,20 @@ module.exports = class DiagramJudge {
     getPage = (page) => {
         switch (page) {
             case "login":
-                let url = new URL("/page/" + page, this.setting.server.url);
+                url = new URL("/page/" + page, this.setting.server.url);
                 url.search = new URLSearchParams({
                     uuid: this.uuid,
                     apiUrl: this.getApi("login")
                 });
+                return url.href;
+            case "test1":
+                url = new URL("/page/" + page, this.setting.server.url);
+                return url.href;
+            case "test2":
+                url = new URL("/page/" + page, this.setting.server.url);
+                return url.href;
+            case "test3":
+                url = new URL("/page/" + page, this.setting.server.url);
                 return url.href;
             default:
                 return new URL("/page", this.setting.server.url).href;
@@ -172,13 +183,38 @@ module.exports = class DiagramJudge {
         });
     }
 
-    fetchData = (type) => {
+    fetchData = (type, _arguments) => {
+        _arguments = JSON.stringify(_arguments);
         switch(type) {
             case "questions":
                 return new Promise(async (res, rej) => {
                     let url = new URL(this.getApi("data"));
                     url.search = new URLSearchParams({
-                        dataName: "questions"
+                        dataName: "questions",
+                        arguments: null
+                    });
+                    
+                    const respond = await fetch(url.href, {
+                        headers: {
+                            'user-agent': 'Mozilla/4.0 MDN Example',
+                            'content-type': 'application/json',
+                            "Access-Control-Allow-Origin": "*"
+                        },
+                        method: 'get'
+                    }).then((res) => {
+                        return res.json();
+                    }).catch(err => {
+                        rej(err);
+                    });
+
+                    res(respond);
+                });
+            case "read_question":
+                return new Promise(async (res, rej) => {
+                    let url = new URL(this.getApi("data"));
+                    url.search = new URLSearchParams({
+                        dataName: "read_question",
+                        arguments: _arguments
                     });
                     
                     const respond = await fetch(url.href, {

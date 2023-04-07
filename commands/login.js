@@ -54,9 +54,14 @@ const command = {
                 if(status.statusCode == diagramJudge.setting.Types.STATUS["ONLINE"]) {
                     if(checkInterval) clearInterval(checkInterval);
                     // 登陸成功，渲染頁面
-                    let questions = await diagramJudge.fetchData("questions");
-                    console.log(questions)
-                    diagramJudge.renderPage(questions.data);
+                    let question = await diagramJudge.fetchData("read_question", {
+                        chapterId: '1',
+                        questionId: '1'
+                    }).catch(error => {
+                        console.error(error);
+                    })
+                    console.log(question)
+                    // diagramJudge.renderPage(question.data);
                 }
             }
             callback();
