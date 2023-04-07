@@ -206,7 +206,7 @@ module.exports = class Server {
                 if(!chapterId || !questionId) {
                     throw new Error("missing required parameter, chapterId or questionId.");
                 }
-                return this.query2(`SELECT * FROM uml_judge_questionsSELECT * FROM uml_judge_questions WHERE chap_id = '${chapterId}' AND id = '${questionId}';`);
+                return this.query2(`SELECT * FROM uml_judge_questionsSELECT * FROM uml_judge_questions WHERE chapter_number = '${chapterId}' AND question_number = '${questionId}';`);
             default:
                 throw new Error("type not define.");
         }

@@ -17,7 +17,7 @@ module.exports = class DiagramJudge {
         this.fetchData("questions").then((questions) => {
             this.renderPage(questions.data);
         });
-        
+
     }
 
     /**
@@ -60,7 +60,10 @@ module.exports = class DiagramJudge {
                 url = new URL("/page/" + page, this.setting.server.url);
                 url.search = new URLSearchParams({
                     uuid: this.uuid,
-                    apiUrl: this.getApi("login")
+                    apiUrls: JSON.stringify({
+                        login: this.getApi("login"),
+                        data: this.getApi("data")
+                    })
                 });
                 return url.href;
             case "test1":
@@ -93,17 +96,17 @@ module.exports = class DiagramJudge {
     ping = () => {
         let checkInterval = setInterval(async () => {
             let status = await this.checkStatus().catch(err => {
-                if(err) {
+                if (err) {
                     console.log(err)
-                    if(checkInterval) clearInterval(checkInterval);
+                    if (checkInterval) clearInterval(checkInterval);
                     this.logout(true);
                 }
             });
-            if(
+            if (
                 status.statusCode != this.setting.Types.STATUS["ONLINE"] ||
                 status.uuid != this.uuid ||
                 status.account != this.user) {
-                if(checkInterval) clearInterval(checkInterval);
+                if (checkInterval) clearInterval(checkInterval);
                 this.logout(true);
             }
         }, this.setting.checkLoginInterval * 1000)
@@ -160,7 +163,7 @@ module.exports = class DiagramJudge {
             url.search = new URLSearchParams({
                 uuid: this.uuid
             });
-            
+
             const respond = await fetch(url.href, {
                 headers: {
                     'user-agent': 'Mozilla/4.0 MDN Example',
@@ -185,7 +188,7 @@ module.exports = class DiagramJudge {
 
     fetchData = (type, _arguments) => {
         _arguments = JSON.stringify(_arguments);
-        switch(type) {
+        switch (type) {
             case "questions":
                 return new Promise(async (res, rej) => {
                     let url = new URL(this.getApi("data"));
@@ -193,7 +196,7 @@ module.exports = class DiagramJudge {
                         dataName: "questions",
                         arguments: null
                     });
-                    
+
                     const respond = await fetch(url.href, {
                         headers: {
                             'user-agent': 'Mozilla/4.0 MDN Example',
@@ -216,7 +219,7 @@ module.exports = class DiagramJudge {
                         dataName: "read_question",
                         arguments: _arguments
                     });
-                    
+
                     const respond = await fetch(url.href, {
                         headers: {
                             'user-agent': 'Mozilla/4.0 MDN Example',
@@ -247,7 +250,7 @@ module.exports = class DiagramJudge {
             question: questions[0],
             index: 0
         }
-        
+
         let content = document.querySelector(".content");
         let questionPage = document.querySelector(".questionPage");
         let htmlQuestions = `
@@ -263,7 +266,7 @@ module.exports = class DiagramJudge {
 
         window.focusQuestion = (index) => {
             let realQuestion = document.querySelector("#real-question");
-            if(!realQuestion) return;
+            if (!realQuestion) return;
             this.nowQuestion.index = index;
             this.nowQuestion.question = questions[index];
             realQuestion.innerHTML = this.nowQuestion.question.question_describtion;
@@ -271,10 +274,10 @@ module.exports = class DiagramJudge {
 
         document.querySelector("#toolbar").style.zIndex = 3;
 
-        if(!questionPage) {
+        if (!questionPage) {
             let htmlqs = "";
-            for(let i in questions) {
-                htmlqs += htmlQuestion.replace("$NO", Number(i)+1).replace("$QUESTION", questions[i].question_title).replace("$QINDEX", i)
+            for (let i in questions) {
+                htmlqs += htmlQuestion.replace("$NO", Number(i) + 1).replace("$QUESTION", questions[i].question_title).replace("$QINDEX", i)
             }
             let questionPageWrapper = document.createElement("div");
             questionPageWrapper.className = "questionPageWrapper";

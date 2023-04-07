@@ -6,28 +6,45 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <script src="./test3.js"></script>
 </head>
 
 <body>
     login page<br>
-    <input id="acc"></input>
-    <input id="pwd" type="password"></input>
-    <button id="loginBtn">login</button>
-    <div id="status"></div>
+    <div id="loginPage">
+        <input id="acc"></input>
+        <input id="pwd" type="password"></input>
+        <button id="loginBtn">login</button>
+        <div id="status"></div>
+        <div id="status"></div>
+    </div>
+    <div id="questionPage">
+        
+    </div>
     <script>
 
         const acc = document.querySelector("#acc");
         const pwd = document.querySelector("#pwd");
         const loginBtn = document.querySelector("#loginBtn");
         const login_status = document.querySelector("#status");
+        const questionPage = document.querySelector("#questionPage");
 
         const api = new URL(location.href);
-        const apiUrl = api.searchParams.get('apiUrl');
+        const apiUrls = JSON.parse(api.searchParams.get('apiUrls'));
         const uuid = api.searchParams.get('uuid');
-        console.log(apiUrl, uuid)
+        console.log(apiUrls, uuid)
+
+        const QusetionTemplate = `
+        <h1>&title</h1>
+        <p>&description</p>
+        <div>
+            &buttons
+            <iframe id="myframe" height="200" width="300" title="Iframe Example" allow-scripts="true"></iframe>
+        </div>`
+        const buttonTemplate = '<input type="button" value="需求&buttonId." onclick="aaa(&buttonId);" class="btn"'
         loginBtn.onclick = () => {
-            if(pwd.value == "" || acc.value == "") return;
-            fetch(apiUrl, {
+            if (pwd.value == "" || acc.value == "") return;
+            fetch(apiUrls["login"], {
                 body: JSON.stringify({
                     uuid: uuid,
                     account: acc.value,
@@ -41,16 +58,64 @@
                 method: 'POST'
             }).then((res) => {
                 return res.json();
-            }).then((data) => {
+            }).then(async (data) => {
                 console.log(data)
-                login_status.innerHTML = `status: ${JSON.stringify(data)}`
+                login_status.innerHTML = `status: ${JSON.stringify(data)}`;
+
+                if (data.statusCode == 1) {
+                    // 登陸成功
+                    // 選題目
+                    let url = new URL(apiUrls["data"]);
+                    url.search = new URLSearchParams({
+                        dataName: "read_question",
+                        arguments: JSON.stringify({
+                            chapterId: '1',
+                            questionId: '1'
+                        })
+                    });
+
+                    let respond = await fetch(url.href, {
+                        headers: {
+                            'user-agent': 'Mozilla/4.0 MDN Example',
+                            'content-type': 'application/json',
+                            "Access-Control-Allow-Origin": "*"
+                        },
+                        method: 'get'
+                    }).then((res) => {
+                        return res.json();
+                    }).catch(err => {
+                        rej(err);
+                    });
+
+                    let question = {
+                        question_title: "",
+                        question_description: "",
+
+                    } //respond.data;
+
+                    let descriptions = question.question_description.split("\n");
+
+
+                    let buttons = "";
+                    for(let d in description){
+                        buttons += buttonTemplate.replace("&buttonId", d).replace("&buttonId", d)
+                    }
+
+                    questionPage.innerHTML = QusetionTemplate
+                        .replace("&title", question.question_title)
+                        .replace("&description", question.question_description)
+                        .replace("&buttons", buttons);
+
+                }
             }).catch(err => {
                 console.log(err);
             })
             acc.value = "";
             pwd.value = "";
         }
+
         
+
     </script>
 </body>
 
