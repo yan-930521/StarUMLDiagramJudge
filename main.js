@@ -13,4 +13,6 @@ exports.init = () => {
     for(const event in events) {
         
     }*/
+
+    app.diagramJudge = diagramJudge;
 }
