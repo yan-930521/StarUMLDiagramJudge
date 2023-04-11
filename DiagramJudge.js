@@ -14,6 +14,12 @@ module.exports = class DiagramJudge {
         this.user = null;
         this.isLogin = false;
 
+
+        /**
+         * 可能要加個api去check now focus question.
+         */
+        this.nowQuestion = null;
+
         /*
         this.fetchData("questions").then((questions) => {
             this.renderPage(questions.data);

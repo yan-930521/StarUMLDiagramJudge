@@ -198,6 +198,14 @@ module.exports = class Server {
         switch (type) {
             case "questions":
                 return this.query2("SELECT * FROM uml_judge_questions");
+            case "search_question":
+                const {
+                    chapterNo
+                } = _arguments;
+                if(!chapterNo) {
+                    throw new Error("missing required parameter, chapterId.");
+                }
+                return this.query2(`SELECT * FROM uml_judge_questions WHERE chapter_number = '${chapterNo}';`);
             case "read_question":
                 const {
                     chapterId,
@@ -206,9 +214,18 @@ module.exports = class Server {
                 if(!chapterId || !questionId) {
                     throw new Error("missing required parameter, chapterId or questionId.");
                 }
-                return this.query2(`SELECT * FROM uml_judge_questionsSELECT * FROM uml_judge_questions WHERE chapter_number = '${chapterId}' AND question_number = '${questionId}';`);
+                return this.query2(`SELECT * FROM uml_judge_questions WHERE chapter_number = '${chapterId}' AND question_order = '${questionId}';`);
+            case "read_requirements":
+                const {
+                    question_number
+                } = _arguments;
+                if(!question_number) {
+                    throw new Error("missing required parameter, questionId.");
+                }
+                return this.query2(`SELECT * FROM uml_question_requirement WHERE question_number = '${question_number}';`);
+                //return this.query2(`SELECT * FROM uml_question_requirement WHERE question_number = '${p_num}';`);
             default:
-                throw new Error("type not define.");
+                throw new Error("type not defined.");
         }
     }
 }

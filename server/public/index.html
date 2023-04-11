@@ -21,7 +21,10 @@
 
     </div>
     <script>
-
+        let ch_id = 1;
+        let p_num = 1;
+        let p_length = 0;
+        const requirement_types = ["","實體","屬性","關係"];
         const acc = document.querySelector("#acc");
         const pwd = document.querySelector("#pwd");
         const loginBtn = document.querySelector("#loginBtn");
@@ -37,7 +40,10 @@
         <h1>&title</h1>
         <p>&description</p>
         <div>
+            <input type="button" value="上一題" onclick="prev_Question();" class="btn">
+            <input type="button" value="下一題" onclick="next_Question();" class="btn"><br>
             &buttons
+            <br>
             <iframe id="myframe" height="200" width="300" title="Iframe Example" allow-scripts="true"></iframe>
         </div>`
         const buttonTemplate = '<input type="button" value="需求&buttonId." onclick="onFocus(&buttonId, `&qusetion`);" class="btn">'
@@ -61,19 +67,30 @@
                 console.log(data)
                 login_status.innerHTML = `status: ${JSON.stringify(data)}`;
 
-                if (data.statusCode == 1) {
+                show_question(data.statusCode, ch_id, p_num)
+            }).catch(err => {
+                console.log(err);
+            })
+            acc.value = "";
+            pwd.value = "";
+        }
+
+
+        async function show_question (login_status, ch_id, p_num)
+        {
+            if (login_status == 1) {
                     // 登陸成功
                     // 選題目
+
                     let url = new URL(apiUrls["data"]);
                     url.search = new URLSearchParams({
-                        dataName: "read_question",
+                        dataName: "search_question",
                         arguments: JSON.stringify({
-                            chapterId: '1',
-                            questionId: '1'
+                            chapterNo: ch_id,
                         })
                     });
 
-                    let respond = await fetch(url.href, {
+                    let respond1 = await fetch(url.href, {
                         headers: {
                             'user-agent': 'Mozilla/4.0 MDN Example',
                             'content-type': 'application/json',
@@ -86,30 +103,75 @@
                         console.error(err);
                     });
 
-                    console.log(respond);
+                    //console.log(respond1);
+                    p_length = respond1.data.length;
+                    console.log(p_length)
+
+                    url = new URL(apiUrls["data"]);
+                    url.search = new URLSearchParams({
+                        dataName: "read_question",
+                        arguments: JSON.stringify({
+                            chapterId: ch_id,
+                            questionId: p_num
+                        })
+                    });
+
+                    let respond2 = await fetch(url.href, {
+                        headers: {
+                            'user-agent': 'Mozilla/4.0 MDN Example',
+                            'content-type': 'application/json',
+                            "Access-Control-Allow-Origin": "*"
+                        },
+                        method: 'get'
+                    }).then((res) => {
+                        return res.json();
+                    }).catch(err => {
+                        console.error(err);
+                    });
+
+                    //console.log(respond2);
+                    // question_number: respond2.data.question_number
+
+                    url = new URL(apiUrls["data"]);
+                    url.search = new URLSearchParams({
+                        dataName: "read_requirements",
+                        arguments: JSON.stringify({
+                            question_number: respond2.data[0].question_number
+                        })
+                    });
+
+                    let respond3 = await fetch(url.href, {
+                        headers: {
+                            'user-agent': 'Mozilla/4.0 MDN Example',
+                            'content-type': 'application/json',
+                            "Access-Control-Allow-Origin": "*"
+                        },
+                        method: 'get'
+                    }).then((res) => {
+                        return res.json();
+                    }).catch(err => {
+                        console.error(err);
+                    });
+
+                    //console.log(respond3);
 
                     let question = {
-                        question_title: "question_title",
-                        question_description: "question_description",
-                        question_demands: [
-                            "實體型態包含：醫師（Doctor）、住院病人（InPatient）、檢驗項目（TestItem）、病房（Room）。 ",
-                            "醫師有三個屬性：代號（dId）、姓名（dName）、性別 （gender）。其中代號是唯一的。 ",
-                            "住院病人有三個屬性：病人代號（pId）、姓名（pName）、緊急聯 絡人（contact），其中緊急聯絡人可以有多位，且必須記載緊急聯絡人之姓名（name）與電話（phone）。此外病人代號是唯一的。",
-                            "檢驗項目有兩個屬性：項目代號（tId）、名稱（tName）。其中項 目代號是唯一的。",
-                            "病房有兩個屬性：房號（rNo）、等級（level）。其中房號是唯一的。",
-                            "每一位住院病人必定有一位主治醫師；每個醫生可以看很多住院病人，至少需要看一個住院病人。",
-                            "每一位住院病人可以有多個檢驗項目，檢驗日期 （date）必須記載；每個住院病人至少要有一個檢驗項目。",
-                            "每一個病房可以最多住六個住院病人，也可能是空病房；每個住院病人只能住在一間病房。",
-                            "每一個醫生可以檢視多個檢驗項目；每個檢驗項目可以被多個醫生檢驗。"
-                        ]
+                        question_title: respond2.data[0].question_title,
+                        question_description: respond2.data[0].question_describtion,
+                        question_demands: respond2.data[0].question_demands
 
                     } //respond.data;
 
+                    respond3.data.forEach(element => {
+                        question.question_demands.push(element)
+                    });
+
+                    console.log(question.question_demands)
 
                     let buttons = "";
                     for (let d in question.question_demands) {
-                        console.log(question.question_demands[d], buttons)
-                        buttons += buttonTemplate.replace("&buttonId", d).replace("&buttonId", d).replace("&qusetion", question.question_demands[d])
+                        //console.log(question.question_demands[d], buttons)
+                        buttons += buttonTemplate.replace("&buttonId", question.question_demands[d].requirement_number + requirement_types[question.question_demands[d].requirement_type]).replace("&buttonId", question.question_demands[d].requirement_number).replace("&qusetion", question.question_demands[d].requirement_content)
                     }
 
                     questionPage.innerHTML = QusetionTemplate
@@ -118,11 +180,6 @@
                         .replace("&buttons", buttons);
 
                 }
-            }).catch(err => {
-                console.log(err);
-            })
-            acc.value = "";
-            pwd.value = "";
         }
 
         var timer = null;
@@ -132,6 +189,18 @@
             const iframeWindow = document.getElementsByTagName('iframe')[0].contentWindow;
             iframeWindow.document.body.innerHTML = qusetion;
             startTimer()
+        }
+
+        function prev_Question()
+        {
+            if(p_num == 1) return;
+            else return show_question(login_status, ch_id, --p_num);
+        }
+
+        function next_Question()
+        {
+            if(p_num == p_length) return;
+            else return show_question(login_status, ch_id, ++p_num);
         }
 
         var startTimer = function () {

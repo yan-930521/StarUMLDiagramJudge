@@ -20,7 +20,7 @@ var percent = 0.00;
 const sql_connection = mysql.createConnection({
 	user: 'admin',
 	password: 'kurumi1024',
-	host: '127.0.0.1',
+	host: 'localhost',
 	port: '3306',
 	database: 'uml_judge_data',
 });
@@ -39,7 +39,7 @@ module.exports = class {
 		//console.log("studentAnswer:\n" + studentAnswer)
 		let uploadCount = await this._getStUploadCount(st_id, p_num).catch(err => console.log(err))
 		judge_result = await this._judge(studentAnswer, standardAnswer, st_id, p_num, uploadCount)
-		console.log(judge_result)
+		console.log(typeof(judge_result))
 		return judge_result
 	}
 
@@ -53,7 +53,7 @@ module.exports = class {
 	}
 
 	_getStUploadCount = async (st_id, p_num) => {
-		let sql = "SELECT count(`id`) FROM `uml_judge_result` WHERE `st_id` = '" + st_id + "' AND `pid` = '" + p_num + "'";
+		let sql = "SELECT count(`id`) FROM `uml_judge_result` WHERE `uid` = '" + st_id + "' AND `pid` = '" + p_num + "'";
 		return new Promise(async (res, rej) => {
 			let connection = await this.getSqlConnection(this.config);
 			connection.query(sql, function (err, result) {
@@ -146,7 +146,7 @@ module.exports = class {
 			for (let i = 0; i < studentAnswer.length; i++) {
 				if (correctAnswerClass.includes(studentAnswer[i][0])) {
 					for (let j = 0; j < CorrectAnswer.length; j++) {
-						if ((studentAnswer[i][0] == CorrectAnswer[j][0]) && (studentAnswer[i].length >= CorrectAnswer[j].length)) {
+						if ((studentAnswer[i][0] == CorrectAnswer[j][0]) && (studentAnswer[i].length == CorrectAnswer[j].length)) {
 							console.log(studentAnswer[i][0] + ": Correct instance name.")
 							judgeResultsInClass_2.push(studentAnswer[i][0] + ": Correct instance name." + "\n")
 							for (let k = 1; k < CorrectAnswer[j].length; k++) {
@@ -166,23 +166,41 @@ module.exports = class {
 						}
 						else if ((studentAnswer[i][0] == CorrectAnswer[j][0]) && (studentAnswer[i].length != CorrectAnswer[j].length)) {
 							//console.log(studentAnswer[i][0] + ": The number of elements is wrong in this class.")
+							judgeResultsInClass_2.push(studentAnswer[i][0] + ": Correct instance name." + "\n")
 							judgeResultsInClass_1.push(studentAnswer[i][0] + ": The number of elements is wrong in this instance." + "\n")
 							judgeResultsInClass_2.push(studentAnswer[i][0] + ": The number of elements is wrong in this instance." + "\n")
+							for (let k = 1; k < CorrectAnswer[j].length; k++) {
+								if (CorrectAnswer[j].includes(studentAnswer[i][k])) {
+									//console.log("\t" + studentAnswer[i][k] + " is Correct.")
+									judgeResultsInClass_2.push("    " + studentAnswer[i][k] + " is Correct." + "\n")
+									tmpCorrectedAnswers.push(studentAnswer[i][k])
+									//if(CorrectAnswer[j])
+									sumOfCorrectAnswers++
+								}
+								else {
+									wrongAnswersInClass.push(studentAnswer[i][k])
+								}
+							}
+							tmpCorrectingAnswers = CorrectAnswer[j].slice(1)
+							expectedAnswersInClass = $(tmpCorrectingAnswers).not(tmpCorrectedAnswers).toArray()
 						}
 					}
 					//console.log(wrongAnswersInClass)
 					//console.log(wrongAnswersInClass.length)
 					if (wrongAnswersInClass.length != 0) {
 						//console.log("It's something wrong in the diagram.")
-						judgeResultsInClass_1.push("It's something incorrect in instance " + studentAnswer[i][0] + ".\n")
-						judgeResultsInClass_2.push("It's something incorrect in instance " + studentAnswer[i][0] + ".\n")
-						//console.log("Student's Answers which is wrong: ")
-						judgeResultsInClass_1.push("Student's Unexpected Answers : " + "\n")
-						judgeResultsInClass_2.push("Student's Unexpected Answers : " + "\n")
-						for (let l = 0; l < wrongAnswersInClass.length; l++) {
-							//console.log("\t" + wrongAnswersInClass[l])
-							judgeResultsInClass_1.push("    " + wrongAnswersInClass[l] + "\n")
-							judgeResultsInClass_2.push("    " + wrongAnswersInClass[l] + "\n")
+							judgeResultsInClass_1.push("It's something incorrect in instance " + studentAnswer[i][0] + ".\n")
+							judgeResultsInClass_2.push("It's something incorrect in instance " + studentAnswer[i][0] + ".\n")
+							//console.log("Student's Answers which is wrong: ")
+							judgeResultsInClass_1.push("Student's Unexpected Answers : " + "\n")
+							judgeResultsInClass_2.push("Student's Unexpected Answers : " + "\n")
+							console.log(wrongAnswersInClass)
+							for (let l = 0; l < wrongAnswersInClass.length; l++) {
+								if(wrongAnswersInClass[l] != null){
+								//console.log("\t" + wrongAnswersInClass[l])
+									judgeResultsInClass_1.push("    " + wrongAnswersInClass[l] + "\n")
+									judgeResultsInClass_2.push("    " + wrongAnswersInClass[l] + "\n")
+							}
 						}
 						//console.log("Expected Answers: ")
 						judgeResultsInClass_1.push("Expected Answers: " + "\n")
@@ -330,4 +348,5 @@ module.exports = class {
 
 		return currentDateTime;
 	}
+
 }
